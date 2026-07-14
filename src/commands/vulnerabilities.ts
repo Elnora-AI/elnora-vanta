@@ -45,7 +45,8 @@ export function setupVulnerabilitiesCommand(program: Command): void {
 		.action(
 			handleAsyncCommand(async (opts: Record<string, string | boolean>) => {
 				const params: Record<string, string> = {};
-				if (opts.severity) params.severity = opts.severity as string;
+				// API enum is uppercase; accept either case from the user
+				if (opts.severity) params.severity = (opts.severity as string).toUpperCase();
 				if (opts.integration) params.integrationId = opts.integration as string;
 				if (opts.cve) params.externalVulnerabilityId = opts.cve as string;
 				const limit = parseLimit(opts.limit as string);

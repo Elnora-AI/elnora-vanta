@@ -57,7 +57,7 @@ Default API base is `https://api.vanta.com`. EU or AUS tenants set
 | Vulnerable assets | `elnora-vanta vuln-assets list` |
 | Remediation tracking | `elnora-vanta vuln-remediations list` |
 | Risk register | `elnora-vanta risks list` |
-| People / personnel | `elnora-vanta people list [--task-status COMPLETED]` |
+| People / personnel | `elnora-vanta people list [--task-status OVERDUE]` |
 | User groups | `elnora-vanta groups list` |
 | Connected integrations | `elnora-vanta integrations list` |
 | Compliance policies | `elnora-vanta policies list [--framework <id>]` |
@@ -99,7 +99,7 @@ Filters:
 - `--cve <id>` — filter vulns by CVE ID
 - `--search <query>` — search vulns by name, description, or package identifier
 - `--integration <id>` — filter tests or vulns by integration ID
-- `--task-status <status>` — people: COMPLETED, IN_PROGRESS, FAILED, NOT_STARTED
+- `--task-status <status>` — people: COMPLETE, DUE_SOON, OVERDUE, NONE
 
 ## Cached References
 

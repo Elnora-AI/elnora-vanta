@@ -1,5 +1,5 @@
 /**
- * Error hierarchy for the Elnora Vanta CLI.
+ * Error hierarchy for the elnora-vanta CLI.
  */
 
 /**
@@ -38,16 +38,6 @@ export class AuthError extends CliError {
 			exitCode: EXIT_CODES.AUTH,
 		});
 		this.name = "AuthError";
-	}
-}
-
-export class NotFoundError extends CliError {
-	constructor(entity: string, identifier: string) {
-		super(`${entity} not found: ${identifier}`, {
-			suggestion: `Check the identifier and try again. Use 'vanta ${entity.toLowerCase()}s list' to see available ${entity.toLowerCase()}s.`,
-			exitCode: EXIT_CODES.NOT_FOUND,
-		});
-		this.name = "NotFoundError";
 	}
 }
 

@@ -11,7 +11,7 @@ What you can do in your first ten minutes:
 - Query **your whole Vanta compliance surface** — frameworks, tests, controls, documents, vulnerabilities, risks, people, vendors, integrations — as `elnora-vanta <group> <command> --flags`, with clean JSON out.
 - Get an instant **compliance snapshot**: `/vanta-status` shows framework completion, failing tests, and overdue vulnerabilities in one shot.
 - Keep a **cached compliance reference** (tests, controls, documents, vulns) so agents answer posture questions without an API round-trip.
-- Triage vulnerabilities the useful way: `elnora-vanta vulns list --severity critical --overdue`, filter by CVE, search by name.
+- Triage vulnerabilities the useful way: `elnora-vanta vulns list --severity CRITICAL --overdue`, filter by CVE, search by name.
 - Ask the **compliance-auditor agent** open questions ("what's blocking our audit?") and get answers grounded in your live Vanta data.
 - One-line plugin install in Claude Code: `/plugin marketplace add Elnora-AI/elnora-vanta`.
 

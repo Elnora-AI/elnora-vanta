@@ -77,10 +77,13 @@ export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "m
 	const allowedHost = new URL(origin).hostname;
 	const url = path.startsWith("http") ? path : `${origin}/v1${path.startsWith("/") ? "" : "/"}${path}`;
 
-	// Validate URL always points to the configured Vanta API host — prevents SSRF
+	// Validate URL always points to the configured Vanta API host over HTTPS — prevents SSRF
 	const parsed = new URL(url);
 	if (parsed.hostname !== allowedHost) {
 		throw new Error(`Refusing to send authenticated request to ${parsed.hostname} (only ${allowedHost} is allowed)`);
+	}
+	if (parsed.protocol !== "https:") {
+		throw new Error(`Refusing to send authenticated request over ${parsed.protocol} (only HTTPS is allowed)`);
 	}
 
 	const makeHeaders = (bearerToken: string): Record<string, string> => ({

@@ -22,7 +22,10 @@ concurrency:
 jobs:
   analyze:
     name: Analyze TypeScript
-    if: ${{ github.repository_visibility == 'public' }}
+    # Code scanning is unavailable while the repo is private (no GHAS), so gate
+    # push/PR runs on visibility. `schedule` payloads carry no repository object,
+    # so the weekly run is ungated — it fails harmlessly until the public flip.
+    if: ${{ github.event_name == 'schedule' || !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       actions: read

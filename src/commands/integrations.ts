@@ -4,7 +4,7 @@
 
 import type { Command } from "commander";
 import { safeId, vantaFetch } from "../client.js";
-import { handleAsyncCommand, outputSuccess } from "../output.js";
+import { handleAsyncCommand, outputSuccess, parseLimit } from "../output.js";
 import { fetchAllPages } from "../utils/pagination.js";
 
 interface Integration {
@@ -19,9 +19,10 @@ export function setupIntegrationsCommand(program: Command): void {
 	integrations
 		.command("list")
 		.description("List all connected integrations")
+		.option("--limit <n>", "Max results")
 		.action(
-			handleAsyncCommand(async () => {
-				const data = await fetchAllPages<Integration>("/integrations");
+			handleAsyncCommand(async (opts: Record<string, string>) => {
+				const data = await fetchAllPages<Integration>("/integrations", {}, { limit: parseLimit(opts.limit) });
 				const summary = data.map((i) => ({
 					id: i.integrationId,
 					name: i.displayName,

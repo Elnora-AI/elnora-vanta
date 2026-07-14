@@ -168,7 +168,7 @@ Then run `/vanta-sync` once. It generates cached reference files
 posture.** They are gitignored — never commit them, never paste their contents
 anywhere public. Only the shipped `*.template.md` placeholders belong in git.
 
-**Checkpoint:** `/vanta-status` answers from the synced references.
+**Checkpoint:** `/vanta-status` returns a live dashboard, and the four generated `vanta-*.md` reference files exist.
 
 ---
 

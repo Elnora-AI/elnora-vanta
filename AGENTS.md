@@ -40,7 +40,7 @@ The CLI **cannot modify your Vanta tenant.** Every request is HTTP GET, enforced
 | Look up a specific CVE | `elnora-vanta vulns list --cve CVE-2026-1234` · `--search <text>` |
 | Affected assets / remediation state | `elnora-vanta vuln-assets list` · `elnora-vanta vuln-remediations list` |
 | Risk register | `elnora-vanta risks list` |
-| Personnel onboarding / security tasks | `elnora-vanta people list --task-status NOT_STARTED` (also `COMPLETED`, `IN_PROGRESS`, `FAILED`) |
+| Personnel onboarding / security tasks | `elnora-vanta people list --task-status OVERDUE` (also `COMPLETE`, `DUE_SOON`, `NONE`) |
 | Vendors | `elnora-vanta vendors list` |
 | Connected integrations | `elnora-vanta integrations list` |
 | Policies (optionally per framework) | `elnora-vanta policies list --framework <id>` |
@@ -82,7 +82,7 @@ To make Claude Code also load this file: `ln -s AGENTS.md CLAUDE.md`.
 
 ```sh
 pnpm install
-pnpm typecheck && pnpm lint && pnpm test && pnpm build
+pnpm typecheck && pnpm lint && pnpm build && pnpm test
 node scripts/check-no-populated-references.mjs
 ```
 

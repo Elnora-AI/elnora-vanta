@@ -12,7 +12,11 @@ allowed-tools:
 Uses the `elnora-vanta` CLI (read-only, must be on PATH — see the
 vanta-workspace skill for install and auth).
 
-Run these 3 commands via Bash in parallel:
+Run these 4 commands via Bash in parallel:
+
+```bash
+elnora-vanta frameworks list
+```
 
 ```bash
 elnora-vanta tests list --status NEEDS_ATTENTION
@@ -26,7 +30,8 @@ elnora-vanta documents list --status "Needs document"
 elnora-vanta vulns list --overdue
 ```
 
-Then present a summary table:
+Then present the framework completion (controls/documents/tests per framework)
+followed by a summary table:
 
 | Category | Count | Status |
 |----------|-------|--------|

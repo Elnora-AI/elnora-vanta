@@ -4,7 +4,7 @@
 
 import type { Command } from "commander";
 import { safeId, vantaFetch } from "../client.js";
-import { handleAsyncCommand, outputSuccess } from "../output.js";
+import { handleAsyncCommand, outputSuccess, parseLimit } from "../output.js";
 import { fetchAllPages } from "../utils/pagination.js";
 
 interface Framework {
@@ -25,9 +25,10 @@ export function setupFrameworksCommand(program: Command): void {
 	frameworks
 		.command("list")
 		.description("List all frameworks with completion status")
+		.option("--limit <n>", "Max results")
 		.action(
-			handleAsyncCommand(async () => {
-				const data = await fetchAllPages<Framework>("/frameworks");
+			handleAsyncCommand(async (opts: Record<string, string>) => {
+				const data = await fetchAllPages<Framework>("/frameworks", {}, { limit: parseLimit(opts.limit) });
 				const summary = data.map((f) => ({
 					id: f.id,
 					name: f.displayName,

@@ -67,10 +67,10 @@ async function writeCachedToken(cache: TokenCache): Promise<void> {
 		mode: 0o600, // Owner-only read/write — token is sensitive (Unix only)
 	});
 	// On Windows, fs.writeFile mode is ignored — tighten permissions via icacls
-	if (platform() === "win32") {
+	if (platform() === "win32" && process.env.USERNAME) {
 		try {
 			const { execFileSync } = await import("node:child_process");
-			execFileSync("icacls", [TOKEN_CACHE_PATH, "/inheritance:r", "/grant:r", `${process.env.USERNAME ?? ""}:(R,W)`], {
+			execFileSync("icacls", [TOKEN_CACHE_PATH, "/inheritance:r", "/grant:r", `${process.env.USERNAME}:(R,W,D)`], {
 				stdio: "ignore",
 			});
 		} catch {

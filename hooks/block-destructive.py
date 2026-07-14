@@ -13,10 +13,12 @@ import sys
 
 WRITE_METHODS = ["POST", "PUT", "PATCH", "DELETE"]
 
-# A statement boundary: start of command OR after a shell separator (; && || | newline).
-# Used as a lookbehind-equivalent prefix so we only match real invocations, not quoted
-# strings inside grep/echo/cat/etc.
-_STATEMENT_PREFIX = r"(?:^|[\n;&|])\s*"
+# A statement boundary: start of command, a shell separator (; && || | newline),
+# a command-substitution opener ($( or backtick), or a wrapper that executes its
+# arguments (env/command/xargs/nohup/timeout). Used as a lookbehind-equivalent
+# prefix so we only match real invocations, not quoted strings inside
+# grep/echo/cat/etc.
+_STATEMENT_PREFIX = r"(?:^|[\n;&|`]|\$\()\s*(?:(?:env|command|xargs|nohup|timeout)\s+(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+|-\S+\s+|\d+\s+)*)?"
 
 # Blocked CLI subcommands — each requires an actual CLI invocation
 # (optional `node ` or path prefix) at statement start, followed by the subcommand.
@@ -75,14 +77,27 @@ def check_command(command: str) -> "tuple[bool, str]":
 
 
 def _block(reason: str) -> None:
+    # Block via stdout JSON on exit 0 — NOT a non-zero exit. hooks.json runs
+    # `python3 ... || python ...`; a non-zero exit would fire the fallback,
+    # which re-runs with already-consumed stdin and exits 0, silently
+    # converting the block into an allow (fail-open). Exit 0 + permissionDecision
+    # keeps the block authoritative and leaves the fallback for the only case
+    # it exists for: python3 missing entirely (stdin unconsumed).
+    full_reason = (
+        f"SAFETY: {reason}. The elnora-vanta CLI is read-only. "
+        f"All modifications must be done in the Vanta dashboard."
+    )
     result = {
-        "decision": "block",
-        "reason": f"SAFETY: {reason}. The elnora-vanta CLI is read-only. "
-                  f"All modifications must be done in the Vanta dashboard.",
+        "decision": "block",  # legacy field, still honored
+        "reason": full_reason,
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": full_reason,
+        },
     }
     print(json.dumps(result))
-    sys.stderr.write(result["reason"] + "\n")
-    sys.exit(2)
+    sys.exit(0)
 
 
 def main():

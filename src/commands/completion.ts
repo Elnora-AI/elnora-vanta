@@ -18,7 +18,7 @@ export function setupCompletionCommand(program: Command): void {
 _${cliName}_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local commands="${commandList}"
-  local global_opts="--help --version --compact --output --fields --no-color"
+  local global_opts="--help --version --compact --output --page-size --fields --no-color"
   if [ "\${COMP_CWORD}" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "\${commands} \${global_opts}" -- "\${cur}") )
   fi
@@ -29,7 +29,7 @@ complete -F _${cliName}_completions ${cliName}`);
 					console.log(`# ${cliName} zsh completion — add to ~/.zshrc
 _${cliName}() {
   local commands=(${commands.map((c) => `"${c}"`).join(" ")})
-  local global_opts=(--help --version --compact --output --fields --no-color)
+  local global_opts=(--help --version --compact --output --page-size --fields --no-color)
   _describe 'command' commands
   _describe 'option' global_opts
 }
@@ -42,6 +42,7 @@ complete -c ${cliName} -l help -d "Show help"
 complete -c ${cliName} -l version -d "Show version"
 complete -c ${cliName} -l compact -d "Compact JSON output"
 complete -c ${cliName} -l output -d "Output format" -xa "json table csv"
+complete -c ${cliName} -l page-size -d "API page size (1-100)"
 complete -c ${cliName} -l fields -d "Comma-separated fields"
 complete -c ${cliName} -l no-color -d "Disable colors"`);
 					break;
@@ -50,7 +51,7 @@ complete -c ${cliName} -l no-color -d "Disable colors"`);
 Register-ArgumentCompleter -CommandName ${cliName} -ScriptBlock {
   param($commandName, $wordToComplete, $cursorPosition)
   $commands = @(${commands.map((c) => `'${c}'`).join(", ")})
-  $globalOpts = @('--help', '--version', '--compact', '--output', '--fields', '--no-color')
+  $globalOpts = @('--help', '--version', '--compact', '--output', '--page-size', '--fields', '--no-color')
   $all = $commands + $globalOpts
   $all | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
     [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)

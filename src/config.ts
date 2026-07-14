@@ -86,5 +86,8 @@ export function apiOrigin(): string {
 			`VANTA_API_BASE_URL host ${parsed.hostname} is not a Vanta API host (allowed: ${[...ALLOWED_API_HOSTS].join(", ")})`,
 		);
 	}
+	if (parsed.port !== "") {
+		throw new Error(`VANTA_API_BASE_URL must not specify a port (got :${parsed.port})`);
+	}
 	return parsed.origin;
 }

@@ -26,7 +26,7 @@ export function setupPeopleCommand(program: Command): void {
 	people
 		.command("list")
 		.description("List all people")
-		.option("--task-status <status>", "Filter: COMPLETED, IN_PROGRESS, FAILED, NOT_STARTED")
+		.option("--task-status <status>", "Filter: COMPLETE, DUE_SOON, OVERDUE, NONE")
 		.option("--limit <n>", "Max results")
 		.action(
 			handleAsyncCommand(async (opts: Record<string, string>) => {
