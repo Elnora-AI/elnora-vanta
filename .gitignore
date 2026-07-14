@@ -1,0 +1,42 @@
+# Node.js
+node_modules/
+*.tgz
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Scrape/research caches never enter this repo
+.firecrawl/
+
+# Populated compliance reference caches never enter this repo.
+# They are YOUR organization's live compliance posture (failing tests, open
+# vulnerabilities, document gaps). Only the committed *.template.md files and
+# vanta-config.json ship; /vanta-sync writes the real vanta-*.md next to them
+# (or to $VANTA_REFERENCES_DIR), and those stay local.
+references/*.md
+!references/*.template.md

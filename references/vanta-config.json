@@ -1,0 +1,21 @@
+{
+  "frameworks": {
+    "soc2": {
+      "displayName": "SOC 2 Type II",
+      "key": "soc2"
+    },
+    "iso27001": {
+      "displayName": "ISO 27001:2022",
+      "key": "iso27001"
+    }
+  },
+  "staleness": {
+    "freshHours": 24,
+    "warnHours": 72,
+    "urgentHours": 168
+  },
+  "rateLimiting": {
+    "maxRequestsPerMinute": 50,
+    "refillIntervalMs": 60000
+  }
+}

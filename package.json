@@ -1,0 +1,76 @@
+{
+  "name": "@elnora-ai/vanta",
+  "version": "0.1.0",
+  "description": "Read-only Vanta compliance CLI and Claude Code plugin — frameworks, tests, controls, documents, and vulnerabilities as agent-friendly JSON",
+  "type": "module",
+  "bin": {
+    "elnora-vanta": "dist/main.js"
+  },
+  "main": "dist/main.js",
+  "files": [
+    "dist/",
+    "commands/",
+    "agents/",
+    "skills/",
+    "hooks/",
+    "references/vanta-config.json",
+    "references/*.template.md",
+    ".claude-plugin/",
+    "AGENTS.md",
+    "INSTALL_FOR_AGENTS.md",
+    "README.md",
+    "SAFETY.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/main.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src/ __tests__/ scripts/",
+    "lint:fix": "biome check --write src/ __tests__/ scripts/",
+    "format": "biome format --write src/ __tests__/ scripts/",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "vanta",
+    "compliance",
+    "soc2",
+    "iso27001",
+    "security",
+    "grc",
+    "claude-code",
+    "claude-code-plugin",
+    "cli",
+    "agent",
+    "elnora"
+  ],
+  "author": "Elnora AI <opensource@elnora.ai>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Elnora-AI/elnora-vanta"
+  },
+  "bugs": {
+    "url": "https://github.com/Elnora-AI/elnora-vanta/issues"
+  },
+  "homepage": "https://github.com/Elnora-AI/elnora-vanta",
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.22.4",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.7"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  }
+}

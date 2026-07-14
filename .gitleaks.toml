@@ -1,0 +1,6 @@
+# gitleaks config for elnora-vanta.
+# Extends the built-in ruleset. No allowlist paths: nothing in this repo
+# legitimately contains a token-shaped string — credentials live only in the
+# user's environment or ~/.config/elnora-vanta/.env (never committed).
+[extend]
+useDefault = true
