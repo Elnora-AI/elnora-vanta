@@ -1,6 +1,6 @@
 {
   "name": "vanta-workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read-only Vanta compliance workspace for Claude Code — CLI-driven queries across frameworks, tests, controls, documents, and vulnerabilities, a cached compliance reference, a compliance-auditor agent, and a destructive-operation guard. Backed by the elnora-vanta CLI.",
   "author": {
     "name": "Elnora AI",

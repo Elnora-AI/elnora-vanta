@@ -11,7 +11,7 @@
       "name": "vanta-workspace",
       "description": "Read-only Vanta compliance workspace for Claude Code — CLI-driven queries across frameworks, tests, controls, documents, and vulnerabilities, a cached compliance reference, a compliance-auditor agent, and a destructive-operation guard.",
       "source": "./",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "productivity",
       "tags": [
         "vanta",
