@@ -1,6 +1,6 @@
 {
   "name": "@elnora-ai/vanta",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read-only Vanta compliance CLI and Claude Code plugin — frameworks, tests, controls, documents, and vulnerabilities as agent-friendly JSON",
   "type": "module",
   "bin": {
