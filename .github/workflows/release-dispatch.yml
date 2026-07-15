@@ -21,6 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
         run: |
-          gh workflow run release-please.yml \
-            --repo Elnora-AI/elnora-automation \
-            -f repos="${GITHUB_REPOSITORY#*/}"
+          jq -n --arg repo "${GITHUB_REPOSITORY#*/}" '{ref:"main",inputs:{repos:$repo}}' \
+            | gh api --method POST \
+                /repos/Elnora-AI/elnora-automation/actions/workflows/release-please.yml/dispatches \
+                --input -
