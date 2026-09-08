@@ -152,8 +152,8 @@ The framework ids in the output are **your org's** — they vary per tenant
 
 If the user runs Claude Code, offer the plugin — it adds slash commands
 (`/vanta-status`, `/vanta-report`, `/vanta-vulns`, `/vanta-sync`), a
-`compliance-auditor` agent, and a hook that blocks any non-GET Vanta call.
-Inside Claude Code:
+`compliance-auditor` agent, and a `PreToolUse` hook that blocks `--force`, so a
+destructive operation stays with a human at a terminal. Inside Claude Code:
 
 ```
 /plugin marketplace add Elnora-AI/elnora-vanta
@@ -162,6 +162,15 @@ Inside Claude Code:
 ```
 /plugin install vanta-workspace@elnora-vanta
 ```
+
+If the plugin is already installed, `/plugin install` reports it as installed
+and changes nothing. Use `/plugin marketplace update elnora-vanta` followed by
+`/reload-plugins`, in that order, because a session enforces the hook it loaded
+rather than the one on disk. Keep the two versions in step: the CLI comes from
+npm and the plugin from the marketplace, so upgrading one leaves the other
+behind, and a newer binary paired with an older hook is guarded by a hook that
+predates the guard. Check that `elnora-vanta --version` matches the version
+`/plugin` reports, for every scope it lists.
 
 Then run `/vanta-sync` once. It generates cached reference files
 (`vanta-tests.md`, `vanta-documents.md`, `vanta-controls.md`,

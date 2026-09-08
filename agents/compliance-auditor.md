@@ -78,7 +78,7 @@ Run after significant code changes, especially to:
 
 ## CLI Quick Reference
 
-All queries use `elnora-vanta <command>`. All commands are read-only.
+All queries use `elnora-vanta <command>`. Every command in the table below is read-only. The wider `api` and `mcp` trees can write, so a write there needs `--confirm` and a destructive one `--force`, which is reserved for a person at a terminal.
 
 | Data | Command |
 |------|---------|
