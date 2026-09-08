@@ -4,7 +4,7 @@ Universal guide for any coding agent working with `elnora-vanta`. Read natively 
 
 ## What this is
 
-`@elnora-ai/vanta` — one npm package exposing the `elnora-vanta` CLI: read-only coverage of the Vanta compliance API (frameworks, tests, controls, documents, vulnerabilities, risks, people, vendors, and more). Any agent shells out to the CLI; JSON output and structured errors are designed for self-correction.
+`@elnora-ai/vanta` — one npm package exposing the `elnora-vanta` CLI: complete coverage of the Vanta compliance API (321 REST operations plus 165 MCP tools), with reads that run freely and writes gated behind `--confirm`/`--force`. Any agent shells out to the CLI; JSON output and structured errors are designed for self-correction.
 
 > The binary is `elnora-vanta`, not `vanta` — this avoids shadowing other tools named `vanta` on PATH.
 
@@ -101,7 +101,7 @@ node scripts/check-no-populated-references.mjs
 
 | Path | Purpose |
 |---|---|
-| `src/main.ts`, `src/commands/` | CLI entry + command groups (all read-only) |
+| `src/main.ts`, `src/commands/` | CLI entry + curated (read-only) groups, plus the generated `api` and `mcp` trees |
 | `src/auth.ts`, `src/client.ts`, `src/config.ts`, `src/output.ts` | OAuth client-credentials flow, GET-only HTTP client, env resolution, output layer |
 | `skills/`, `commands/`, `agents/`, `hooks/` | Claude Code plugin surfaces |
 | `references/` | Config + `*.template.md` placeholders — generated live-data files are gitignored |

@@ -62,12 +62,13 @@ _API_WRITE_RE = re.compile(
 )
 
 
-# Destructive execution via the generated `api` tree. --force is the flag that
-# turns a printed plan into a real deletion, so it is the one an agent may not use.
+# Destructive execution via either generated surface — the REST `api` tree or the
+# `mcp` tool tree. --force is the flag that turns a printed plan into a real
+# deletion, so it is the one an agent may not use.
 _API_FORCE_RE = re.compile(
     _STATEMENT_PREFIX
     + r"(?:node\s+)?\S*(?:vanta\.js|main\.js|elnora-vanta)\s+"
-    + r"(?=[^\n;&|]*\bapi\b)"
+    + r"(?=[^\n;&|]*\b(?:api|mcp)\b)"
     + r"(?=[^\n;&|]*--force\b)",
     re.IGNORECASE,
 )
@@ -82,7 +83,7 @@ def check_command(command: str) -> "tuple[bool, str]":
     match = _BLOCKED_CLI_RE.search(command)
     if match:
         matched_text = match.group(0).strip()
-        return True, f"Blocked write operation: '{matched_text}'"
+        return True, f"Blocked write operation: '{matched_text}'."
 
     match = _API_FORCE_RE.search(command)
     if match:
@@ -94,7 +95,7 @@ def check_command(command: str) -> "tuple[bool, str]":
 
     match = _API_WRITE_RE.search(command)
     if match:
-        return True, "Blocked Vanta API write: HTTP write method against the Vanta API"
+        return True, "Blocked Vanta API write: HTTP write method against the Vanta API."
 
     return False, ""
 
@@ -107,8 +108,8 @@ def _block(reason: str) -> None:
     # keeps the block authoritative and leaves the fallback for the only case
     # it exists for: python3 missing entirely (stdin unconsumed).
     full_reason = (
-        f"SAFETY: {reason}. The elnora-vanta CLI is read-only. "
-        f"All modifications must be done in the Vanta dashboard."
+        f"SAFETY: {reason} Reads and confirmed non-destructive writes are allowed; "
+        f"show the user the printed request plan and let them run the destructive step themselves."
     )
     result = {
         "decision": "block",  # legacy field, still honored

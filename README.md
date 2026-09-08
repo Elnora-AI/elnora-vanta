@@ -1,6 +1,6 @@
 # elnora-vanta
 
-**Read-only Vanta compliance data as a CLI and a Claude Code plugin — frameworks, failing tests, controls, evidence gaps, and vulnerabilities as clean, agent-friendly JSON. Built for AI agents and humans to query compliance posture from the terminal, with zero write access.**
+**The complete Vanta API as a CLI and a Claude Code plugin — 321 REST operations and 165 MCP tools as clean, agent-friendly JSON. Built for AI agents and humans to work compliance from the terminal, with reads that run freely and writes that never happen by accident.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@elnora-ai/vanta)](https://www.npmjs.com/package/@elnora-ai/vanta)
@@ -9,6 +9,7 @@
 What you can do in your first ten minutes:
 
 - Query **your whole Vanta compliance surface** — frameworks, tests, controls, documents, vulnerabilities, risks, people, vendors, integrations — as `elnora-vanta <group> <command> --flags`, with clean JSON out.
+- Reach **every documented endpoint** via `elnora-vanta api`, and the capabilities that exist only over MCP (answer library, knowledge base, privacy assessments, access reviews) via `elnora-vanta mcp`.
 - Get an instant **compliance snapshot**: `/vanta-status` shows framework completion, failing tests, and overdue vulnerabilities in one shot.
 - Keep a **cached compliance reference** (tests, controls, documents, vulns) so agents answer posture questions without an API round-trip.
 - Triage vulnerabilities the useful way: `elnora-vanta vulns list --severity CRITICAL --overdue`, filter by CVE, search by name.
@@ -17,7 +18,7 @@ What you can do in your first ten minutes:
 
 > **The binary is `elnora-vanta`, not `vanta`.** Vanta and other tools may claim the bare `vanta` name; we deliberately don't shadow it.
 
-> **Strictly read-only.** The CLI performs HTTP GET requests only — enforced in code, by a `PreToolUse` guard in the plugin, and by the OAuth scope itself (`vanta-api.all:read`). It cannot change anything in your Vanta account. See [Read-only guarantee](#read-only-guarantee).
+> **Writes never happen by accident.** Reads run immediately. A write prints the exact request it would send and stops unless you pass `--confirm`; a destructive one also needs `--force`; `--dry-run` overrides both. The plugin's `PreToolUse` hook blocks `--force` outright, keeping deletions with a human. Want it to stay read-only at the credential layer? Grant your OAuth client only `vanta-api.all:read` and every write fails at Vanta. See [Write safety](#write-safety).
 
 ---
 
@@ -65,7 +66,9 @@ Install the CLI (Step 1), then drop [`AGENTS.md`](AGENTS.md) at your project roo
 You create **your own** OAuth client — nothing is shared or hosted by us.
 
 1. Go to [app.vanta.com/settings/api](https://app.vanta.com/settings/api) → **Create** an OAuth client with the **client_credentials** grant.
-2. Grant it **only** the `vanta-api.all:read` scope. Do not grant any write scope — the CLI never uses one, and a read-only credential means even a compromised token can't change your compliance posture.
+2. Choose its scopes deliberately:
+   - **`vanta-api.all:read` only** — the safest default. Everything under `api <group> <read command>` and all the curated commands work; every write fails at Vanta rather than relying on the CLI's flags. Recommended unless you actually need to change things.
+   - **Add `vanta-api.all:write`** only if you intend to use the write operations. The CLI still requires `--confirm` (and `--force` for destructive ones), but the credential itself can now modify your compliance posture, so treat it accordingly.
 3. Copy the **Client ID** and **Client Secret**.
 4. Save them:
    ```sh
@@ -94,7 +97,7 @@ An SSRF allow-list pins requests to exactly these three hosts — any other base
 
 ## What you get
 
-- **`elnora-vanta` CLI** *(npm — Step 1)* — read-only coverage of the Vanta API, scriptable and JSON-pipeable, with structured errors agents can self-correct from.
+- **`elnora-vanta` CLI** *(npm — Step 1)* — complete coverage of the Vanta API, scriptable and JSON-pipeable, with structured errors agents can self-correct from and graded write safety.
 - **`vanta-workspace` Claude Code plugin** *(separate `/plugin install` — Step 2)* — a skill, an agent, four slash commands, and two hooks, all delegating to the CLI.
 
 ### Claude Code surfaces
@@ -225,7 +228,7 @@ Open-source agent tooling from [Elnora AI](https://github.com/Elnora-AI) — fre
 
 ## Contributing
 
-Issues and PRs welcome at [github.com/Elnora-AI/elnora-vanta](https://github.com/Elnora-AI/elnora-vanta). Keep changes read-only by design — anything that adds a mutating API call will not be merged. Questions: opensource@elnora.ai.
+Issues and PRs welcome at [github.com/Elnora-AI/elnora-vanta](https://github.com/Elnora-AI/elnora-vanta). Keep the safety grading intact — a new mutating operation must be classified `write` or `destructive` and go through the same gate; anything that lets a write execute without `--confirm` will not be merged. Questions: opensource@elnora.ai.
 
 ## Security
 

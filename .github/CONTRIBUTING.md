@@ -33,12 +33,18 @@ Before opening a PR:
    ```
 7. Open the PR against `main`. CI runs automatically; an Elnora maintainer will review.
 
-## A note on the read-only guarantee
+## A note on write safety
 
-The `elnora-vanta` CLI is strictly read-only: every command issues HTTP GET
-requests only, enforced in the client code, in tests, and by a PreToolUse hook.
-PRs that add write operations (POST/PATCH/DELETE) against the Vanta API will be
-declined — it's a design constraint, not an oversight.
+The CLI covers the whole Vanta API, but a write never happens by accident.
+Every operation carries a risk grade asserted by the test suite: `read` runs,
+`write` requires `--confirm`, and `destructive` requires `--confirm` and
+`--force`. `--dry-run` overrides all of it, and the PreToolUse hook blocks
+`--force` so destructive changes stay with a human.
+
+Keep that grading intact. A PR that adds a mutating operation must classify it
+and route it through `evaluateSafety()`; anything that lets a write execute
+without `--confirm`, or that grades a cascading or deleting operation as merely
+`write`, will be declined — it's a design constraint, not an oversight.
 
 ## Conventional Commit Types
 

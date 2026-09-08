@@ -44,7 +44,8 @@ We follow a 90-day disclosure timeline. We ask that you:
 - Credential handling: env-var resolution, `~/.config/elnora-vanta/.env` storage
   (or `$VANTA_CONFIG_DIR/.env`), the token cache at
   `~/.config/elnora-vanta/token.json`, and secret redaction in output and logs
-- The read-only guarantee (anything that lets the CLI issue a non-GET request)
+- The write-safety gate (anything that lets a write execute without `--confirm`, or a
+  destructive operation without `--force`)
 - The SSRF regional-host allow-list (`api.vanta.com`, `api.eu.vanta.com`, `api.aus.vanta.com`)
 - The publication guard (`scripts/check-no-populated-references.mjs`)
 
@@ -61,8 +62,9 @@ We follow a 90-day disclosure timeline. We ask that you:
 
 - Never commit credentials to version control — keep `VANTA_CLIENT_ID` /
   `VANTA_CLIENT_SECRET` in `~/.config/elnora-vanta/.env` (or your environment).
-- Create the OAuth client with **only** the `vanta-api.all:read` scope. The CLI
-  is read-only by design and never needs write scopes.
+- Grant the OAuth client **only** `vanta-api.all:read` unless you actually intend
+  to use the write operations. On a read-only credential every write fails at
+  Vanta, so the CLI's `--confirm`/`--force` flags stop being the only safeguard.
 - Rotate the client secret periodically, and revoke immediately if it is exposed.
 - The token cache (`~/.config/elnora-vanta/token.json`) is written with mode
   `0600`; delete it after revoking a client.

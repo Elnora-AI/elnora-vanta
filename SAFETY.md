@@ -129,5 +129,5 @@ adds a harness-level refusal that works even if the hook is disabled.
   OAuth client with write scopes can still modify your Vanta data; keep the
   client used with this CLI scoped to `vanta-api.all:read` only.
 - The hook inspects Bash tool calls inside Claude Code. Scripts run outside
-  the agent bypass it — the GET-only client and the read-only OAuth scope are
+  the agent bypass it — the `--confirm`/`--force` gate and the OAuth scope are
   the layers that still hold there.

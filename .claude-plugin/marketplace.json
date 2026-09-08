@@ -1,6 +1,6 @@
 {
   "name": "elnora-vanta",
-  "description": "Vanta compliance workspace for Claude Code — single-plugin marketplace.",
+  "description": "Vanta compliance workspace for Claude Code \u2014 single-plugin marketplace.",
   "owner": {
     "name": "Elnora AI",
     "email": "opensource@elnora.ai",
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "vanta-workspace",
-      "description": "Read-only Vanta compliance workspace for Claude Code — CLI-driven queries across frameworks, tests, controls, documents, and vulnerabilities, a cached compliance reference, a compliance-auditor agent, and a destructive-operation guard.",
+      "description": "Vanta compliance workspace for Claude Code \u2014 the complete documented API (321 REST operations plus 165 MCP tools) as agent-friendly JSON, with dry-run-by-default write safety, a cached compliance reference, a compliance-auditor agent, and a destructive-operation guard.",
       "source": "./",
       "version": "0.1.1",
       "category": "productivity",
