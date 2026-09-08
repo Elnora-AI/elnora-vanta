@@ -89,6 +89,15 @@ of them are now covered and pinned by tests, which is the point worth taking
 from it: the list of shapes is empirical, so treat it as one that will grow
 again.
 
+The hook also ships on its own schedule. The CLI comes from npm and the plugin
+from the marketplace, so `npm install -g @elnora-ai/vanta@latest` upgrades the
+binary and leaves the plugin where it was, and on an already-installed plugin
+`/plugin install` reports it as installed and changes nothing. A CLI that has
+learned a new operation can therefore be guarded by a hook that predates the
+rule written for it. Run `/plugin marketplace update elnora-vanta`, restart
+Claude Code, and check that `elnora-vanta --version` matches the version
+`/plugin` reports.
+
 **The CLI's own gate is the control.** `--confirm` and `--force` are enforced in
 `src/safety.ts` before any request is built, they apply to every caller
 including scripts and cron that never pass through a hook, and the OAuth scope

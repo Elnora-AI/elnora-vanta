@@ -51,6 +51,20 @@ Run these as two separate slash commands, waiting for the first to finish:
 
 `/plugin` should then list `vanta-workspace` as enabled. If `elnora-vanta --version` fails, go back to step 1, because the skills need the binary on PATH.
 
+### Upgrading
+
+The CLI and the plugin ship through different channels and upgrade separately. Upgrade both together, because the plugin carries the `PreToolUse` hook that guards the CLI:
+
+```sh
+npm install -g @elnora-ai/vanta@latest      # the CLI
+```
+
+```
+/plugin marketplace update elnora-vanta     # the plugin, then restart Claude Code
+```
+
+Upgrading only the CLI leaves the newer binary paired with the older hook, and a hook predating a guard it was written to enforce will let the command through. `elnora-vanta --version` and the version `/plugin` reports should match.
+
 ### Codex, Cursor, and other agents
 
 Install the CLI, then drop [`AGENTS.md`](AGENTS.md) at your project root. Those agents read it natively and map intent to CLI commands. The plugin is Claude Code only. To have an agent do the install, point it at [`INSTALL_FOR_AGENTS.md`](INSTALL_FOR_AGENTS.md), a runbook that creates the OAuth client, collects credentials and smoke-tests, pausing for you at each step.

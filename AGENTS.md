@@ -70,7 +70,7 @@ The Claude Code `/vanta-sync` command writes cached reference files (`vanta-test
 
 ## Claude Code
 
-The Claude Code plugin (`vanta-workspace`) adds a native skill, slash commands (`/vanta-status`, `/vanta-report`, `/vanta-vulns`, `/vanta-sync`), a `compliance-auditor` agent, and a hook that blocks any non-GET Vanta call. Install after the CLI:
+The Claude Code plugin (`vanta-workspace`) adds a native skill, slash commands (`/vanta-status`, `/vanta-report`, `/vanta-vulns`, `/vanta-sync`), a `compliance-auditor` agent, and a `PreToolUse` hook that blocks `--force`. The CLI ships from npm and the plugin from the marketplace, so upgrade both together or a newer binary ends up guarded by an older hook. Install after the CLI:
 
 ```
 /plugin marketplace add Elnora-AI/elnora-vanta
