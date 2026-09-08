@@ -100,11 +100,17 @@ installed at more than one scope updates per scope, so one scope can report the
 new version while another still runs the old hook.
 
 This was observed rather than reasoned about. On a machine running the 0.1.2
-CLI with 0.1.2 plugin files on disk but a session that had reloaded before the
-update, `api vendors delete-by-id … --confirm --force` was not blocked and the
-DELETE reached Vanta, while `documents delete …` in the same session was
-blocked. The second rule exists in both versions and the `--force` rule only in
-the newer one, which is how the stale hook identified itself.
+CLI with 0.1.2 plugin files on disk, in a session that had reloaded before the
+update landed, `api vendors delete-by-id … --confirm --force` was not blocked
+and the DELETE reached Vanta, while `documents delete …` in the same session
+was blocked. The `documents delete` rule exists in both versions and the
+`--force` rule only in the newer one, so the session was in all likelihood
+still enforcing the older hook; that part is the conclusion the behaviour
+supports rather than something read off disk. After `/reload-plugins` ran
+again, the same `--force` command was refused by this hook's own message, and a
+read, a confirmed non-destructive write and a `--confirm` without `--force` all
+behaved correctly, so the rule itself is sound and the failure was the upgrade
+window.
 
 So: `/plugin marketplace update elnora-vanta`, then `/reload-plugins`, then
 check that `elnora-vanta --version` matches the version `/plugin` reports for
