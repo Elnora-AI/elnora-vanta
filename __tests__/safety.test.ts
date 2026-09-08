@@ -38,6 +38,15 @@ describe("write-safety gate", () => {
 		expect(evaluateSafety(DESTRUCTIVE, { confirm: true, force: true }).execute).toBe(true);
 	});
 
+	it("marks a refusal as blocked but a dry run as not blocked", () => {
+		// The exit code branches on this: a refusal is a failure, a dry run is not.
+		expect(evaluateSafety(WRITE, {}).blocked).toBe(true);
+		expect(evaluateSafety(DESTRUCTIVE, { confirm: true }).blocked).toBe(true);
+		expect(evaluateSafety(DESTRUCTIVE, { confirm: true, force: true, dryRun: true }).blocked).toBeFalsy();
+		expect(evaluateSafety(READ, { dryRun: true }).blocked).toBeFalsy();
+		expect(evaluateSafety(READ, {}).blocked).toBeFalsy();
+	});
+
 	it("lets --dry-run override a fully confirmed destructive call", () => {
 		const decision = evaluateSafety(DESTRUCTIVE, { confirm: true, force: true, dryRun: true });
 		expect(decision.execute).toBe(false);
@@ -85,6 +94,12 @@ describe("generated operation registry", () => {
 				expect(operation.risk, `${operation.id} is DELETE but not destructive`).toBe("destructive");
 			}
 		}
+	});
+
+	it("grades offboarding as destructive — Vanta cascades it to account deactivation", () => {
+		const offboard = OPERATIONS.find((o) => o.id === "OffboardPeople");
+		expect(offboard, "OffboardPeople missing from the registry").toBeDefined();
+		expect(offboard?.risk).toBe("destructive");
 	});
 
 	it("classifies every GET as read and nothing else as read", () => {

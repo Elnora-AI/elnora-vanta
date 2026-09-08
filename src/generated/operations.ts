@@ -5,7 +5,7 @@
  * To refresh: pnpm spec:fetch && pnpm generate
  *
  * 321 operations across 38 groups
- * (157 read, 128 write, 36 destructive).
+ * (157 read, 127 write, 37 destructive).
  */
 
 export type OperationRisk = "read" | "write" | "destructive";
@@ -4315,7 +4315,7 @@ export const OPERATIONS: readonly Operation[] = [
 		"method": "post",
 		"path": "/people/offboard",
 		"summary": "Offboard people",
-		"risk": "write",
+		"risk": "destructive",
 		"pathParams": [],
 		"queryParams": [],
 		"body": {

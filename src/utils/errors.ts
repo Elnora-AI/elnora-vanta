@@ -5,7 +5,7 @@
 /**
  * Exit codes by error type.
  * 1 = generic, 2 = usage/validation, 3 = auth, 4 = not found,
- * 5 = rate limit, 10 = unexpected/crash.
+ * 5 = rate limit, 6 = blocked by the write-safety gate, 10 = unexpected/crash.
  */
 export const EXIT_CODES = {
 	GENERIC: 1,
@@ -13,6 +13,8 @@ export const EXIT_CODES = {
 	AUTH: 3,
 	NOT_FOUND: 4,
 	RATE_LIMIT: 5,
+	/** A write was refused for want of --confirm/--force. A dry run is not this. */
+	BLOCKED: 6,
 	UNEXPECTED: 10,
 } as const;
 

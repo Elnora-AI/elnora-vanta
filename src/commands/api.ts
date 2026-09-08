@@ -16,7 +16,7 @@ import { type HttpMethod, vantaRequest } from "../client.js";
 import { OPERATIONS, type Operation } from "../generated/operations.js";
 import { handleAsyncCommand, outputSuccess } from "../output.js";
 import { evaluateSafety, parseBodyArgument } from "../safety.js";
-import { ValidationError } from "../utils/errors.js";
+import { EXIT_CODES, ValidationError } from "../utils/errors.js";
 
 /** Reserved by the safety gate and the generic escape hatches. */
 const RESERVED_FLAGS = new Set(["confirm", "force", "dryRun", "body", "query"]);
@@ -134,6 +134,8 @@ function registerOperation(groupCommand: Command, operation: Operation): void {
 
 			if (!decision.execute) {
 				outputSuccess(decision.plan);
+				// A refusal must not look like success to a script or an agent.
+				if (decision.blocked) process.exitCode = EXIT_CODES.BLOCKED;
 				return;
 			}
 

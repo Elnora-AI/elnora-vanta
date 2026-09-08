@@ -14,7 +14,7 @@ import { callTool, listTools, type McpTool } from "../mcp/client.js";
 import { mcpLogin, mcpLogout, mcpUrl } from "../mcp/oauth.js";
 import { handleAsyncCommand, outputSuccess } from "../output.js";
 import { evaluateSafety, parseBodyArgument } from "../safety.js";
-import { ValidationError } from "../utils/errors.js";
+import { EXIT_CODES, ValidationError } from "../utils/errors.js";
 
 const READ_PREFIXES = ["list", "get", "search", "fetch", "check", "download"];
 const DESTRUCTIVE_PREFIXES = ["delete", "deactivate", "remove", "reject", "unlink", "archive", "revoke"];
@@ -137,6 +137,8 @@ export function setupMcpCommand(program: Command): void {
 
 				if (!decision.execute) {
 					outputSuccess(decision.plan);
+					// A refusal must not look like success to a script or an agent.
+					if (decision.blocked) process.exitCode = EXIT_CODES.BLOCKED;
 					return;
 				}
 

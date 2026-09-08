@@ -22,8 +22,12 @@ const HTTP_METHODS = ["get", "post", "put", "patch", "delete"] as const;
 
 type HttpMethod = (typeof HTTP_METHODS)[number];
 
-/** Operations that change state but whose name does not start with a destructive verb. */
-const DESTRUCTIVE_PATTERNS = [/deactivate/i, /archive/i, /revoke/i, /remove/i];
+/**
+ * Operations that change state but whose name does not start with a destructive
+ * verb. Offboarding is here because Vanta cascades it: offboarding a person
+ * automatically marks their unmonitored accounts deactivated.
+ */
+const DESTRUCTIVE_PATTERNS = [/deactivate/i, /archive/i, /revoke/i, /remove/i, /offboard/i];
 
 interface SpecParameter {
 	name: string;

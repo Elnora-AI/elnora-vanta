@@ -41,6 +41,11 @@ function requiredFlags(risk: OperationRisk): string[] {
 export interface SafetyDecision {
 	execute: boolean;
 	plan: Record<string, unknown>;
+	/**
+	 * True only when the operation was refused for want of --confirm/--force.
+	 * A --dry-run is a successful dry run, not a refusal, and never sets this.
+	 */
+	blocked?: boolean;
 }
 
 /**
@@ -78,6 +83,7 @@ export function evaluateSafety(plan: RequestPlan, flags: SafetyFlags): SafetyDec
 	if (missing.length > 0) {
 		return {
 			execute: false,
+			blocked: true,
 			plan: {
 				dryRun: true,
 				wouldRequest: described,
