@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-Vanta workspace safety hook — blocks ALL write operations.
-The elnora-vanta CLI is read-only by design. This hook blocks any attempt
-to use POST, PUT, PATCH, or DELETE against the Vanta API.
+Vanta workspace safety hook — keeps destructive compliance changes out of agent hands.
+
+The CLI exposes the full Vanta API, but a write only executes with --confirm and
+a destructive one (DELETE, deactivate, archive, revoke, remove) also needs
+--force. This hook draws the line at that second flag: an agent may read freely
+and may perform a confirmed non-destructive write, but --force is reserved for a
+human at a terminal. Raw curl/wget writes against the Vanta API stay blocked.
 
 This is a PreToolUse hook that inspects Bash commands before execution.
 """
@@ -18,7 +22,19 @@ WRITE_METHODS = ["POST", "PUT", "PATCH", "DELETE"]
 # arguments (env/command/xargs/nohup/timeout). Used as a lookbehind-equivalent
 # prefix so we only match real invocations, not quoted strings inside
 # grep/echo/cat/etc.
-_STATEMENT_PREFIX = r"(?:^|[\n;&|`]|\$\()\s*(?:(?:env|command|xargs|nohup|timeout)\s+(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+|-\S+\s+|\d+\s+)*)?"
+#
+# Also tolerates the two shapes that reach the same binary by another route:
+# a bare `VAR=value ` assignment prefix, and a package runner
+# (npx / pnpm exec / npm run / yarn / bunx).
+_ASSIGNMENTS = r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
+_RUNNER = r"(?:(?:npx|pnpm|npm|yarn|bunx|tsx|node)\s+(?:exec\s+|run\s+|dlx\s+|--\s+)*)?"
+_STATEMENT_PREFIX = (
+    r"(?:^|[\n;&|`]|\$\()\s*"
+    + _ASSIGNMENTS
+    + r"(?:(?:env|command|xargs|nohup|timeout)\s+(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+|-\S+\s+|\d+\s+)*)?"
+    + _ASSIGNMENTS
+    + _RUNNER
+)
 
 # Blocked CLI subcommands — each requires an actual CLI invocation
 # (optional `node ` or path prefix) at statement start, followed by the subcommand.
@@ -45,15 +61,31 @@ _BLOCKED_CLI_RE = re.compile(
 # HTTP write methods against the Vanta API (any region). Blocks when a real
 # HTTP client (curl/wget/http/httpie) appears at statement start AND the same
 # statement contains both a Vanta API host and a write method.
-# Uses lookaheads so the order of --method and URL doesn't matter. Plain
-# `grep "POST api.vanta.com" docs.md` won't trip this because grep is not an
-# HTTP client.
+# Uses lookaheads so the order of --method and URL doesn't matter, and they see
+# through a backslash-newline because a curl carrying a body is normally written
+# across several lines. Plain `grep "POST api.vanta.com" docs.md` won't trip
+# this because grep is not an HTTP client.
 _VANTA_HOST = r"api(?:\.eu|\.aus)?\.vanta\.com"
 _API_WRITE_RE = re.compile(
     _STATEMENT_PREFIX
     + r"(?:curl|wget|http|httpie)\b"                             # HTTP client invocation
-    + r"(?=[^\n;&|]*\b" + _VANTA_HOST + r"\b)"                   # same statement has vanta API
-    + r"(?=[^\n;&|]*\b(?:" + "|".join(WRITE_METHODS) + r")\b)",  # same statement has write method
+    + r"(?=(?:[^\n;&|]|\\\n)*\b" + _VANTA_HOST + r"\b)"          # same statement has vanta API
+    + r"(?=(?:[^\n;&|]|\\\n)*\b(?:" + "|".join(WRITE_METHODS) + r")\b)",  # same statement has write method
+    re.IGNORECASE,
+)
+
+
+# Destructive execution via either generated surface — the REST `api` tree or the
+# `mcp` tool tree. --force is the flag that turns a printed plan into a real
+# deletion, so it is the one an agent may not use.
+_API_FORCE_RE = re.compile(
+    _STATEMENT_PREFIX
+    + r"(?:node\s+)?\S*(?:vanta\.js|main\.(?:js|ts)|elnora-vanta|@elnora-ai/vanta|dev)\s+"
+    # A backslash-newline is line wrapping, not a statement boundary, so the
+    # lookaheads have to see through it: splitting a long command across lines
+    # is ordinary formatting and must not fall out of the guard.
+    + r"(?=(?:[^\n;&|]|\\\n)*\b(?:api|mcp)\b)"
+    + r"(?=(?:[^\n;&|]|\\\n)*--force\b)",
     re.IGNORECASE,
 )
 
@@ -67,11 +99,19 @@ def check_command(command: str) -> "tuple[bool, str]":
     match = _BLOCKED_CLI_RE.search(command)
     if match:
         matched_text = match.group(0).strip()
-        return True, f"Blocked write operation: '{matched_text}'"
+        return True, f"Blocked write operation: '{matched_text}'."
+
+    match = _API_FORCE_RE.search(command)
+    if match:
+        return True, (
+            "Blocked destructive Vanta operation: --force deletes live compliance "
+            "evidence and must be run by a human, not an agent. Drop --force to see "
+            "the request plan instead."
+        )
 
     match = _API_WRITE_RE.search(command)
     if match:
-        return True, "Blocked Vanta API write: HTTP write method against the Vanta API"
+        return True, "Blocked Vanta API write: HTTP write method against the Vanta API."
 
     return False, ""
 
@@ -84,8 +124,8 @@ def _block(reason: str) -> None:
     # keeps the block authoritative and leaves the fallback for the only case
     # it exists for: python3 missing entirely (stdin unconsumed).
     full_reason = (
-        f"SAFETY: {reason}. The elnora-vanta CLI is read-only. "
-        f"All modifications must be done in the Vanta dashboard."
+        f"SAFETY: {reason} Reads and confirmed non-destructive writes are allowed; "
+        f"show the user the printed request plan and let them run the destructive step themselves."
     )
     result = {
         "decision": "block",  # legacy field, still honored

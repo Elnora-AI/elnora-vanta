@@ -8,9 +8,10 @@ into the chat, and never `echo` one in a command the user can see logged.
 
 Two safety facts to keep in mind (and tell the user if they ask):
 
-- The CLI is **strictly read-only** — HTTP GET only, enforced in code, by a
-  guard hook, and by the OAuth scope. Nothing in this runbook can change their
-  Vanta tenant.
+- Reads run freely; **writes never happen by accident**. A write prints the
+  request and stops unless `--confirm` is passed, a destructive one also needs
+  `--force`, and the guard hook blocks `--force` outright. Nothing in this
+  runbook changes their Vanta tenant.
 - The CLI sends data **only** to `api.vanta.com` (or `api.eu.vanta.com` /
   `api.aus.vanta.com` for EU/AUS tenants). No telemetry, no third parties,
   nothing to Elnora.
@@ -67,11 +68,12 @@ Nothing is shared with or hosted by Elnora. **The user must be a Vanta admin**
 3. Grant type: **client_credentials**.
 4. Scope: select **only** `vanta-api.all:read`.
 
-**Warn the user if they select anything broader.** Write scopes (or
-`vanta-api.all:write`) grant powers this CLI will never use — the read scope is
-the whole point, and it is the third layer of the read-only guarantee. If a
-broader scope is already selected, ask them to remove it before creating the
-client.
+**Default to the read scope, and say why.** With `vanta-api.all:read` alone,
+every write fails at Vanta itself, so a mistake cannot reach their compliance
+data. Add `vanta-api.all:write` only if the user says they intend to change
+things through the CLI — and tell them plainly that the credential can then
+modify their compliance posture, with the `--confirm`/`--force` flags as the
+remaining safeguard.
 
 Vanta shows the **Client ID** and **Client Secret** on creation — the secret is
 shown **once**. Tell the user to keep that page open until Step 3 is done.
@@ -191,5 +193,5 @@ Step 4 smoke test after setting it.
 ---
 
 Done. Point the user at [`AGENTS.md`](AGENTS.md) (dispatch table of intents →
-commands) and [`SAFETY.md`](SAFETY.md) (the read-only guarantee in full).
+commands) and [`SAFETY.md`](SAFETY.md) (the write-safety model in full).
 Questions: opensource@elnora.ai · security issues: security@elnora.ai.

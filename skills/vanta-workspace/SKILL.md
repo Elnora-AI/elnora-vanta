@@ -1,19 +1,22 @@
 ---
 name: vanta-workspace
 description: >
-  Read-only Vanta compliance CLI — frameworks, tests, controls, documents,
-  vulnerabilities, risks, people, integrations, policies, vendors, groups,
-  computers. Agent-friendly JSON output, strictly HTTP GET.
+  Vanta compliance CLI — the complete documented API. Curated read-only
+  commands for everyday questions (frameworks, tests, controls, documents,
+  vulnerabilities, risks, people, policies, vendors), plus `api` for all 321
+  REST operations and `mcp` for the answer library, knowledge base, privacy
+  assessments and access reviews. Agent-friendly JSON.
   Use when: checking compliance status, failing tests, missing evidence,
   vulnerability SLAs, risk register, audit prep, or any Vanta query.
   TRIGGERS: "vanta", "compliance", "soc 2", "iso 27001", "failing tests",
   "compliance tests", "controls", "evidence", "vulnerabilities", "vulns",
-  "SLA", "risk register", "audit", "security posture"
+  "SLA", "risk register", "audit", "security posture", "trust center",
+  "answer library", "security questionnaire", "vendor review"
 ---
 
 # Vanta Workspace Skill
 
-Read-only access to the Vanta compliance platform from the command line.
+Access to the Vanta compliance platform from the command line.
 
 The `elnora-vanta` binary must be on your PATH (`npm install -g @elnora-ai/vanta`).
 Verify with `elnora-vanta frameworks list`. If that fails, see
@@ -22,9 +25,43 @@ Verify with `elnora-vanta frameworks list`. If that fails, see
 > Note: the binary is `elnora-vanta`, not `vanta` — we don't shadow other
 > tools that claim the `vanta` name.
 
-**Read-only guarantee**: the CLI issues HTTP GET requests only. This is
-enforced in code, by a PreToolUse hook, and by the OAuth scope
-(`vanta-api.all:read`). Nothing here can modify your Vanta tenant.
+## Three surfaces
+
+| Surface | What it covers | Auth |
+|---------|----------------|------|
+| Curated commands (`frameworks`, `tests`, ...) | Everyday questions, **read-only by construction** | client-credentials |
+| `api <group> <command>` | All **321 documented REST operations**, 38 groups | client-credentials |
+| `mcp call <tool>` | **Vanta's MCP tools** — answer library, knowledge base, privacy assessments, access reviews, `generatePolicy` (not in the REST API) | `elnora-vanta mcp login` (browser, Vanta Admin only) |
+
+Do not guess command names. Discover them:
+
+```bash
+elnora-vanta api search "policy"           # REST operations by name/path/summary
+elnora-vanta api search --risk destructive # everything that can delete
+elnora-vanta mcp tools --grep vendor       # MCP tools
+elnora-vanta mcp tools --name generatePolicy   # one tool's full input schema
+```
+
+**Write safety — read before using `api` or `mcp call`.** Every operation is
+graded, and the grade is asserted by the test suite:
+
+- `[read]` runs immediately.
+- `[write]` prints the request and stops unless `--confirm` is passed.
+- `[destructive]` prints the request and stops unless `--confirm` **and** `--force`.
+
+Exit codes matter more than the JSON here: `0` success, `2` usage, `3` auth,
+`4` not found, `5` rate limit, `6` a write refused for want of `--confirm` or
+`--force`. A refusal is not a success, so check the status rather than assuming
+a command that printed JSON did something.
+
+`--dry-run` always wins. **Never add `--force` on the user's behalf** — the
+PreToolUse hook blocks it, because deleting live compliance evidence is a human
+decision. Show the user the printed plan and let them run it themselves.
+
+A `403 Forbidden` from `api` usually means Vanta declined the resource for this
+OAuth client (integration connectors, secrets, security tasks, user accounts,
+per-device records, audits, contracts need a differently-scoped Vanta app). It
+is not a CLI bug — do not retry it in a loop.
 
 ## Auth
 

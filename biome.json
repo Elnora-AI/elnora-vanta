@@ -29,5 +29,11 @@
         }
       }
     }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!src/generated/**"
+    ]
   }
 }

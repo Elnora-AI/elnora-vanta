@@ -56,22 +56,48 @@ export function getPageSize(): number {
  * Find the primary data array in a result object.
  * Looks for the first array-valued property (skipping scalar metadata like "count").
  */
-function findDataArray(data: unknown): { key: string; rows: Record<string, unknown>[] } | null {
+/**
+ * Locate the row array in a response, returning the path to it.
+ *
+ * Curated commands return it at the top level ({ frameworks: [...] }); the
+ * generated API surface returns Vanta's paginated envelope, which nests it
+ * ({ results: { data: [...] } }). Searching a couple of levels deep lets
+ * --fields, --output table and --output csv work on both.
+ */
+function findDataArray(data: unknown, depth = 0): { path: string[]; rows: Record<string, unknown>[] } | null {
 	if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
 	const obj = data as Record<string, unknown>;
+
 	for (const key of Object.keys(obj)) {
 		if (Array.isArray(obj[key])) {
 			const arr = obj[key] as unknown[];
 			if (arr.length === 0) {
-				return { key, rows: [] };
+				return { path: [key], rows: [] };
 			}
 			const first = arr[0];
 			if (typeof first === "object" && first !== null) {
-				return { key, rows: obj[key] as Record<string, unknown>[] };
+				return { path: [key], rows: obj[key] as Record<string, unknown>[] };
 			}
 		}
 	}
+
+	// No array here — descend. Two levels covers { results: { data: [...] } }.
+	if (depth < 2) {
+		for (const key of Object.keys(obj)) {
+			const nested = findDataArray(obj[key], depth + 1);
+			if (nested) return { path: [key, ...nested.path], rows: nested.rows };
+		}
+	}
 	return null;
+}
+
+/** Rebuild `data` with the array at `path` replaced, without mutating the original. */
+function replaceAtPath(data: unknown, path: string[], rows: unknown[]): unknown {
+	if (path.length === 0) return rows;
+	const [head, ...rest] = path;
+	const obj = { ...(data as Record<string, unknown>) };
+	obj[head] = rest.length === 0 ? rows : replaceAtPath(obj[head], rest, rows);
+	return obj;
 }
 
 function formatCell(value: unknown): string {
@@ -119,7 +145,7 @@ function outputTable(data: unknown): void {
 	const obj = data as Record<string, unknown>;
 	const meta: string[] = [];
 	for (const [k, v] of Object.entries(obj)) {
-		if (k !== found.key && typeof v !== "object") {
+		if (k !== found.path[0] && typeof v !== "object") {
 			meta.push(`${k}: ${v}`);
 		}
 	}
@@ -186,10 +212,8 @@ function applyFieldFilter(data: unknown): unknown {
 		return filtered;
 	});
 
-	// Rebuild the object with filtered rows and preserve metadata
-	const obj = { ...(data as Record<string, unknown>) };
-	obj[found.key] = filteredRows;
-	return obj;
+	// Rebuild with filtered rows, preserving metadata (including pagination info).
+	return replaceAtPath(data, found.path, filteredRows);
 }
 
 export function outputSuccess(data: unknown): void {

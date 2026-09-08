@@ -9,8 +9,24 @@ import { join } from "node:path";
 import { apiOrigin, configDir, loadEnv } from "./config.js";
 import { AuthError } from "./utils/errors.js";
 
-const TOKEN_CACHE_PATH = join(configDir(), "token.json");
 const TOKEN_REFRESH_BUFFER_MS = 60_000; // Refresh 60s before expiry
+
+/**
+ * Read and write use separate OAuth scopes, so they get separate tokens and
+ * separate cache files. A read-only deployment never requests the write scope,
+ * and never has a write-capable token sitting on disk.
+ */
+export type ApiScope = "read" | "write";
+
+const SCOPE_STRINGS: Record<ApiScope, string> = {
+	read: "vanta-api.all:read",
+	write: "vanta-api.all:read vanta-api.all:write",
+};
+
+/** The read token keeps the historical filename so existing installs stay valid. */
+function tokenCachePath(scope: ApiScope): string {
+	return join(configDir(), scope === "read" ? "token.json" : "token-write.json");
+}
 
 interface TokenCache {
 	access_token: string;
@@ -27,9 +43,10 @@ function getCredentials(): { clientId: string; clientSecret: string } {
 	return { clientId: clientId.trim(), clientSecret: clientSecret.trim() };
 }
 
-async function readCachedToken(): Promise<TokenCache | null> {
+async function readCachedToken(scope: ApiScope): Promise<TokenCache | null> {
+	const cachePath = tokenCachePath(scope);
 	try {
-		const data = await readFile(TOKEN_CACHE_PATH, "utf-8");
+		const data = await readFile(cachePath, "utf-8");
 		const cache: TokenCache = JSON.parse(data);
 		if (
 			cache.access_token &&
@@ -45,14 +62,14 @@ async function readCachedToken(): Promise<TokenCache | null> {
 		}
 		const msg = error instanceof Error ? error.message : String(error);
 		process.stderr.write(
-			`Warning: Token cache at ${TOKEN_CACHE_PATH} is unreadable (${msg}). Deleting and re-authenticating.\n`,
+			`Warning: Token cache at ${cachePath} is unreadable (${msg}). Deleting and re-authenticating.\n`,
 		);
 		try {
-			await unlink(TOKEN_CACHE_PATH);
+			await unlink(cachePath);
 		} catch (unlinkError: unknown) {
 			const unlinkMsg = unlinkError instanceof Error ? unlinkError.message : String(unlinkError);
 			process.stderr.write(
-				`Warning: Could not delete corrupt token cache at ${TOKEN_CACHE_PATH}: ${unlinkMsg}. ` +
+				`Warning: Could not delete corrupt token cache at ${cachePath}: ${unlinkMsg}. ` +
 					`Delete it manually if this warning persists.\n`,
 			);
 		}
@@ -60,9 +77,10 @@ async function readCachedToken(): Promise<TokenCache | null> {
 	}
 }
 
-async function writeCachedToken(cache: TokenCache): Promise<void> {
+async function writeCachedToken(cache: TokenCache, scope: ApiScope): Promise<void> {
+	const cachePath = tokenCachePath(scope);
 	await mkdir(configDir(), { recursive: true, mode: 0o700 });
-	await writeFile(TOKEN_CACHE_PATH, JSON.stringify(cache, null, 2), {
+	await writeFile(cachePath, JSON.stringify(cache, null, 2), {
 		encoding: "utf-8",
 		mode: 0o600, // Owner-only read/write — token is sensitive (Unix only)
 	});
@@ -70,7 +88,7 @@ async function writeCachedToken(cache: TokenCache): Promise<void> {
 	if (platform() === "win32" && process.env.USERNAME) {
 		try {
 			const { execFileSync } = await import("node:child_process");
-			execFileSync("icacls", [TOKEN_CACHE_PATH, "/inheritance:r", "/grant:r", `${process.env.USERNAME}:(R,W,D)`], {
+			execFileSync("icacls", [cachePath, "/inheritance:r", "/grant:r", `${process.env.USERNAME}:(R,W,D)`], {
 				stdio: "ignore",
 			});
 		} catch {
@@ -79,7 +97,7 @@ async function writeCachedToken(cache: TokenCache): Promise<void> {
 	}
 }
 
-async function fetchNewToken(clientId: string, clientSecret: string): Promise<TokenCache> {
+async function fetchNewToken(clientId: string, clientSecret: string, scope: ApiScope): Promise<TokenCache> {
 	const response = await fetch(`${apiOrigin()}/oauth/token`, {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -87,7 +105,7 @@ async function fetchNewToken(clientId: string, clientSecret: string): Promise<To
 			grant_type: "client_credentials",
 			client_id: clientId,
 			client_secret: clientSecret,
-			scope: "vanta-api.all:read",
+			scope: SCOPE_STRINGS[scope],
 		}),
 	});
 
@@ -123,43 +141,45 @@ async function fetchNewToken(clientId: string, clientSecret: string): Promise<To
 	};
 
 	try {
-		await writeCachedToken(cache);
+		await writeCachedToken(cache, scope);
 	} catch (error: unknown) {
+		const cachePath = tokenCachePath(scope);
 		process.stderr.write(
-			`Warning: Could not cache token to ${TOKEN_CACHE_PATH}: ${error instanceof Error ? error.message : String(error)}. ` +
+			`Warning: Could not cache token to ${cachePath}: ${error instanceof Error ? error.message : String(error)}. ` +
 				`Token is valid but won't be cached (each CLI run will re-authenticate). ` +
-				`Fix: check write permissions on ${TOKEN_CACHE_PATH} or its parent directory.\n`,
+				`Fix: check write permissions on ${cachePath} or its parent directory.\n`,
 		);
 	}
 	return cache;
 }
 
-let cachedToken: TokenCache | null = null;
+const memoryCache = new Map<ApiScope, TokenCache>();
 
-export async function getAccessToken(): Promise<string> {
-	if (cachedToken && cachedToken.expires_at > Date.now() + TOKEN_REFRESH_BUFFER_MS) {
-		return cachedToken.access_token;
+export async function getAccessToken(scope: ApiScope = "read"): Promise<string> {
+	const inMemory = memoryCache.get(scope);
+	if (inMemory && inMemory.expires_at > Date.now() + TOKEN_REFRESH_BUFFER_MS) {
+		return inMemory.access_token;
 	}
-	cachedToken = null;
+	memoryCache.delete(scope);
 
 	// Check file cache
-	const cached = await readCachedToken();
+	const cached = await readCachedToken(scope);
 	if (cached) {
-		cachedToken = cached;
+		memoryCache.set(scope, cached);
 		return cached.access_token;
 	}
 
 	// Fetch new token
 	const { clientId, clientSecret } = getCredentials();
-	const token = await fetchNewToken(clientId, clientSecret);
-	cachedToken = token;
+	const token = await fetchNewToken(clientId, clientSecret, scope);
+	memoryCache.set(scope, token);
 	return token.access_token;
 }
 
-export async function clearCachedToken(): Promise<void> {
-	cachedToken = null;
+export async function clearCachedToken(scope: ApiScope = "read"): Promise<void> {
+	memoryCache.delete(scope);
 	try {
-		await unlink(TOKEN_CACHE_PATH);
+		await unlink(tokenCachePath(scope));
 	} catch (error: unknown) {
 		const code = error instanceof Error && "code" in error ? (error as NodeJS.ErrnoException).code : undefined;
 		if (code !== "ENOENT") {

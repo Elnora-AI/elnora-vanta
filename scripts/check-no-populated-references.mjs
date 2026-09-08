@@ -35,7 +35,7 @@ function trackedFiles() {
 // forbidden string (a repo-wide grep for the raw patterns must not hit here).
 const SYNC_MARKER = new RegExp("source:\\s*Vanta API " + "via");
 const CRED_ASSIGNMENT = /VANTA_CLIENT_(ID|SECRET)\s*[=:]\s*["']?([A-Za-z0-9_-]{16,})["']?/g;
-const TENANT_URL = new RegExp("app\\.vanta\\.com/" + "c/[A-Za-z0-9.-]+");
+const TENANT_URL = new RegExp("app\\.vanta\\.com/" + "c/([A-Za-z0-9.-]+)", "g");
 const ELNORA_EMAIL = /([A-Za-z0-9._%+-]+)@elnora\.ai/g;
 
 const ALLOWED_EMAILS = new Set(["opensource@elnora.ai", "security@elnora.ai"]);
@@ -43,6 +43,12 @@ const ALLOWED_EMAILS = new Set(["opensource@elnora.ai", "security@elnora.ai"]);
 // Placeholder credential values are fine (your-…, PASTE_YOUR_…, <…>, x-runs, "test", "example").
 const isPlaceholderCred = (v) =>
 	/^(your[-_]|paste[-_]?your|<|x+$|test$|example|placeholder|dummy)/i.test(v) || /^X{4,}/.test(v);
+
+// Vendored OpenAPI documents carry Vanta's own example URLs (app.vanta.com/c/my-domain/…).
+// A placeholder tenant is not a customer, so it is not a leak — but a real one still is,
+// which is why this narrows the rule rather than exempting the file.
+const isPlaceholderTenant = (t) =>
+	/^(my|your|example|acme|test|demo|placeholder|dummy)([-_.]|$)/i.test(t) || /^(company|tenant|domain)$/i.test(t);
 
 // Files excluded from the content scans (still checked for tracked-ness above).
 const isContentExempt = (f) => f === SELF;
@@ -82,8 +88,12 @@ for (const file of files) {
 	}
 
 	// 4. Tenant-scoped Vanta URLs.
-	if (TENANT_URL.test(content)) {
-		violations.push(`${file}: contains a tenant-scoped app.vanta.com/c/… URL — these identify a real Vanta customer`);
+	for (const match of content.matchAll(TENANT_URL)) {
+		if (!isPlaceholderTenant(match[1])) {
+			violations.push(
+				`${file}: contains a tenant-scoped app.vanta.com/c/${match[1]}/… URL — these identify a real Vanta customer`,
+			);
+		}
 	}
 
 	// 5. Elnora emails outside the allowed OSS contacts.

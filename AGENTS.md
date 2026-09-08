@@ -4,7 +4,7 @@ Universal guide for any coding agent working with `elnora-vanta`. Read natively 
 
 ## What this is
 
-`@elnora-ai/vanta` — one npm package exposing the `elnora-vanta` CLI: read-only coverage of the Vanta compliance API (frameworks, tests, controls, documents, vulnerabilities, risks, people, vendors, and more). Any agent shells out to the CLI; JSON output and structured errors are designed for self-correction.
+`@elnora-ai/vanta` — one npm package exposing the `elnora-vanta` CLI: complete coverage of the Vanta compliance API (321 REST operations, plus the MCP tools your tenant exposes), with reads that run freely and writes gated behind `--confirm`/`--force`. Any agent shells out to the CLI; JSON output and structured errors are designed for self-correction.
 
 > The binary is `elnora-vanta`, not `vanta` — this avoids shadowing other tools named `vanta` on PATH.
 
@@ -22,9 +22,22 @@ Create the OAuth client in your Vanta dashboard at [app.vanta.com/settings/api](
 
 Credential resolution order: process env `VANTA_CLIENT_ID` / `VANTA_CLIENT_SECRET` → `~/.config/elnora-vanta/.env` (or `$VANTA_CONFIG_DIR/.env`) → a `.env` next to the CLI. The OAuth token is auto-cached at `~/.config/elnora-vanta/token.json` (mode 0600) and refreshed on expiry — no manual token handling.
 
-## Read-only guarantee
+## Write safety — read this before using `api`
 
-The CLI **cannot modify your Vanta tenant.** Every request is HTTP GET, enforced three ways: in the HTTP client code, by a PreToolUse guard hook (Claude Code plugin), and by the OAuth scope itself (`vanta-api.all:read`). Requests go only to `api.vanta.com`, `api.eu.vanta.com`, or `api.aus.vanta.com` (SSRF allowlist). See [`SAFETY.md`](SAFETY.md).
+The curated top-level commands (`frameworks`, `tests`, `controls`, ...) are
+read-only by construction. The full API lives under `api` and is graded:
+
+- `[read]` runs immediately.
+- `[write]` prints the request and stops unless you pass `--confirm`.
+- `[destructive]` prints the request and stops unless you pass `--confirm` **and** `--force`.
+
+`--dry-run` always wins. **Do not add `--force` on a user's behalf** — the
+plugin's PreToolUse hook blocks it, because deleting live compliance evidence is
+a human decision. Surface the printed plan to the user and let them run it.
+
+Discover operations with `elnora-vanta api search <term>` rather than guessing
+command names. Requests go only to `api.vanta.com`, `api.eu.vanta.com`, or
+`api.aus.vanta.com` (SSRF allowlist). See [`SAFETY.md`](SAFETY.md).
 
 ## Dispatch — when to use what
 
@@ -88,7 +101,7 @@ node scripts/check-no-populated-references.mjs
 
 | Path | Purpose |
 |---|---|
-| `src/main.ts`, `src/commands/` | CLI entry + command groups (all read-only) |
+| `src/main.ts`, `src/commands/` | CLI entry + curated (read-only) groups, plus the generated `api` and `mcp` trees |
 | `src/auth.ts`, `src/client.ts`, `src/config.ts`, `src/output.ts` | OAuth client-credentials flow, GET-only HTTP client, env resolution, output layer |
 | `skills/`, `commands/`, `agents/`, `hooks/` | Claude Code plugin surfaces |
 | `references/` | Config + `*.template.md` placeholders — generated live-data files are gitignored |

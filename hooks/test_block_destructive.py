@@ -14,6 +14,24 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 BLOCKED = [
+    # Multi-line curl: how anyone writes one carrying a body.
+    "curl -X POST \\\n  https://api.vanta.com/v1/controls",
+    "curl \\\n  -X DELETE \\\n  https://api.eu.vanta.com/v1/vendors/x",
+    "wget \\\n  --method=DELETE \\\n  https://api.aus.vanta.com/v1/x",
+    # Routes to the same binary that once slipped past the --force rule.
+    "elnora-vanta api controls delete-control X --confirm \\\n--force",
+    "npx @elnora-ai/vanta api controls delete-control X --confirm --force",
+    "VANTA_CONFIG_DIR=/x elnora-vanta api controls delete-control X --confirm --force",
+    "pnpm exec elnora-vanta api controls delete-control X --confirm --force",
+    "tsx src/main.ts api controls delete-control X --confirm --force",
+    "pnpm dev api controls delete-control X --confirm --force",
+    "npm run dev api controls delete-control X --confirm --force",
+    # The --force rule: destructive execution is reserved for a human.
+    "elnora-vanta api vendors delete-by-id X --confirm --force",
+    "elnora-vanta api controls delete-control X --force",
+    "elnora-vanta api people offboard-people --body '{}' --confirm --force",
+    "elnora-vanta mcp call deletePolicy --args '{}' --confirm --force",
+    "node /usr/local/lib/node_modules/@elnora-ai/vanta/dist/main.js api controls delete-control X --force",
     "elnora-vanta documents delete abc123",
     "node dist/main.js documents create --title x",
     "node ./cli/bin/vanta.js documents bulk-delete",
@@ -32,6 +50,24 @@ BLOCKED = [
 ]
 
 ALLOWED = [
+    # A wrapped GET is still a read, and a pipe ends the statement.
+    "curl \\\n  https://api.vanta.com/v1/controls",
+    "curl https://api.vanta.com/v1/controls | grep POST",
+    "curl -X POST https://example.com/v1/x",
+    # Package-runner commands that have nothing to do with the CLI.
+    "pnpm dev",
+    "npm run build",
+    "npx prettier --write .",
+    "cat docs/api-force-notes.md",
+    # Reads and confirmed non-destructive writes are the agent's to run.
+    "elnora-vanta api frameworks list-frameworks",
+    "elnora-vanta api vendors create-vendor --body '{}' --confirm",
+    "elnora-vanta mcp call getSlas",
+    "elnora-vanta mcp call createControls --args '{}' --confirm",
+    "elnora-vanta api vendors delete-by-id X --dry-run",
+    # prose about --force is not an invocation
+    "echo 'pass --force to really delete' >> notes.md",
+    'grep -n "api .* --force" docs/runbook.md',
     "elnora-vanta tests list --status NEEDS_ATTENTION",
     "elnora-vanta frameworks list",
     "node dist/main.js vulns list --overdue",

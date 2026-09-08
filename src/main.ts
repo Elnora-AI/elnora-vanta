@@ -40,6 +40,7 @@ process.on("uncaughtException", (error) => {
 
 import { createRequire } from "node:module";
 import { Command } from "commander";
+import { setupApiCommand } from "./commands/api.js";
 import { setupCompletionCommand } from "./commands/completion.js";
 import { setupComputersCommand } from "./commands/computers.js";
 import { setupControlsCommand } from "./commands/controls.js";
@@ -47,6 +48,7 @@ import { setupDocumentsCommand } from "./commands/documents.js";
 import { setupFrameworksCommand } from "./commands/frameworks.js";
 import { setupGroupsCommand } from "./commands/groups.js";
 import { setupIntegrationsCommand } from "./commands/integrations.js";
+import { setupMcpCommand } from "./commands/mcp.js";
 import { setupPeopleCommand } from "./commands/people.js";
 import { setupPoliciesCommand } from "./commands/policies.js";
 import { setupRisksCommand } from "./commands/risks.js";
@@ -62,11 +64,11 @@ const program = new Command();
 program
 	.name("elnora-vanta")
 	.description(
-		"Read-only Vanta compliance CLI — frameworks, tests, controls, documents, vulnerabilities, and more as agent-friendly JSON",
+		"Vanta compliance CLI — the complete documented API as agent-friendly JSON. Reads run freely; writes need --confirm, destructive operations also --force",
 	)
 	.version(createRequire(import.meta.url)("../package.json").version);
 
-// Register all command groups (read-only)
+// Curated read-only command groups (the ergonomic front door)
 setupFrameworksCommand(program);
 setupTestsCommand(program);
 setupControlsCommand(program);
@@ -81,6 +83,8 @@ setupGroupsCommand(program);
 setupComputersCommand(program);
 setupVulnAssetsCommand(program);
 setupVulnRemediationsCommand(program);
+setupApiCommand(program);
+setupMcpCommand(program);
 setupCompletionCommand(program);
 
 program.option("--compact", "Compact JSON output (saves tokens)");
