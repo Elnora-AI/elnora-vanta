@@ -1,47 +1,45 @@
 # elnora-vanta
 
-**The complete Vanta API as a CLI and a Claude Code plugin — 321 REST operations and 165 MCP tools as clean, agent-friendly JSON. Built for AI agents and humans to work compliance from the terminal, with reads that run freely and writes that never happen by accident.**
+**Your Vanta compliance program from the terminal. Ask what is failing, pull the evidence, fix what you can, and let an AI agent do it with you. Reads run straight away. Writes stop and show you the request first.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@elnora-ai/vanta)](https://www.npmjs.com/package/@elnora-ai/vanta)
 [![CI](https://github.com/Elnora-AI/elnora-vanta/actions/workflows/ci.yml/badge.svg)](https://github.com/Elnora-AI/elnora-vanta/actions)
 
-What you can do in your first ten minutes:
+In your first ten minutes you can:
 
-- Query **your whole Vanta compliance surface** — frameworks, tests, controls, documents, vulnerabilities, risks, people, vendors, integrations — as `elnora-vanta <group> <command> --flags`, with clean JSON out.
-- Reach **every documented endpoint** via `elnora-vanta api`, and the capabilities that exist only over MCP (answer library, knowledge base, privacy assessments, access reviews) via `elnora-vanta mcp`.
-- Get an instant **compliance snapshot**: `/vanta-status` shows framework completion, failing tests, and overdue vulnerabilities in one shot.
-- Keep a **cached compliance reference** (tests, controls, documents, vulns) so agents answer posture questions without an API round-trip.
-- Triage vulnerabilities the useful way: `elnora-vanta vulns list --severity CRITICAL --overdue`, filter by CVE, search by name.
-- Ask the **compliance-auditor agent** open questions ("what's blocking our audit?") and get answers grounded in your live Vanta data.
-- One-line plugin install in Claude Code: `/plugin marketplace add Elnora-AI/elnora-vanta`.
+- See where you stand: `/vanta-status` gives framework completion, failing tests and overdue vulnerabilities in one shot.
+- Triage vulnerabilities properly, filtering by severity, CVE, or what has blown its SLA.
+- Reach the whole documented Vanta API, 321 operations across 38 resource groups, as `elnora-vanta api <group> <command>`.
+- Reach the parts of Vanta that have no public REST endpoint (answer library, knowledge base, privacy assessments, access reviews) through `elnora-vanta mcp`.
+- Ask the compliance-auditor agent an open question like "what is blocking our audit?" and get an answer grounded in your live data.
 
-> **The binary is `elnora-vanta`, not `vanta`.** Vanta and other tools may claim the bare `vanta` name; we deliberately don't shadow it.
+> The binary is `elnora-vanta`, not `vanta`. Vanta and other tools may claim the bare name, so we do not shadow it.
 
-> **Writes never happen by accident.** Reads run immediately. A write prints the exact request it would send and stops unless you pass `--confirm`; a destructive one also needs `--force`; `--dry-run` overrides both. The plugin's `PreToolUse` hook blocks `--force` outright, keeping deletions with a human. Want it to stay read-only at the credential layer? Grant your OAuth client only `vanta-api.all:read` and every write fails at Vanta. See [Write safety](#write-safety).
+> **Writes do not happen by accident.** A write prints the request it would send and stops unless you pass `--confirm`. A destructive one also needs `--force`, and `--dry-run` overrides both. If you want the credential itself to be the backstop, grant your OAuth client read scope alone and writes fail at Vanta. See [Write safety](#write-safety).
 
 ---
 
 ## Install
 
-> **The CLI and the Claude Code plugin are two separate installs.** The plugin's skills, agent, and slash commands shell out to the `elnora-vanta` binary, so install the CLI **first**, even if you only want the plugin. `/plugin install` does not install the CLI.
+The CLI and the Claude Code plugin are two installs. The plugin shells out to the `elnora-vanta` binary, so do the CLI first even if you only want the plugin.
 
-### Step 1 — Install the CLI (required for everyone)
+### 1. Install the CLI
 
 ```sh
 npm install -g @elnora-ai/vanta
 elnora-vanta --version
 ```
 
-Then create a Vanta OAuth client (see [Vanta OAuth setup](#vanta-oauth-setup)) and smoke-test:
+Create a Vanta OAuth client (below), then check it works:
 
 ```sh
 elnora-vanta frameworks list
 ```
 
-### Step 2 — Add the Claude Code plugin (optional, Claude Code only)
+### 2. Add the Claude Code plugin (optional)
 
-**Only after Step 1 succeeds.** Run these as **two separate slash commands** (paste the first, hit enter, wait, then paste the second):
+Run these as two separate slash commands, waiting for the first to finish:
 
 ```
 /plugin marketplace add Elnora-AI/elnora-vanta
@@ -51,140 +49,109 @@ elnora-vanta frameworks list
 /plugin install vanta-workspace@elnora-vanta
 ```
 
-Then `/plugin` inside Claude Code should list `vanta-workspace` as enabled. If `elnora-vanta --version` fails, go back to Step 1 — the skills won't work without the binary on PATH.
+`/plugin` should then list `vanta-workspace` as enabled. If `elnora-vanta --version` fails, go back to step 1, because the skills need the binary on PATH.
 
-### Using Codex, Cursor, or any other AI coding agent
+### Codex, Cursor, and other agents
 
-Install the CLI (Step 1), then drop [`AGENTS.md`](AGENTS.md) at your project root. Those agents read it natively for the intent → CLI mapping. No plugin needed — the plugin is Claude-Code-only.
+Install the CLI, then drop [`AGENTS.md`](AGENTS.md) at your project root. Those agents read it natively and map intent to CLI commands. The plugin is Claude Code only.
 
-> **Installing via an AI agent?** Point it at [`INSTALL_FOR_AGENTS.md`](INSTALL_FOR_AGENTS.md) — a gated, step-by-step runbook that creates the OAuth client, collects credentials, and smoke-tests, offering to drive the browser for you at each step.
+Installing through an AI agent? Point it at [`INSTALL_FOR_AGENTS.md`](INSTALL_FOR_AGENTS.md), a step-by-step runbook that creates the OAuth client, collects credentials and smoke-tests, pausing for you at each step.
 
 ---
 
 ## Vanta OAuth setup
 
-You create **your own** OAuth client — nothing is shared or hosted by us.
+You create your own OAuth client. Nothing is shared or hosted by us.
 
-1. Go to [app.vanta.com/settings/api](https://app.vanta.com/settings/api) → **Create** an OAuth client with the **client_credentials** grant.
-2. Choose its scopes deliberately:
-   - **`vanta-api.all:read` only** — the safest default. Everything under `api <group> <read command>` and all the curated commands work; every write fails at Vanta rather than relying on the CLI's flags. Recommended unless you actually need to change things.
-   - **Add `vanta-api.all:write`** only if you intend to use the write operations. The CLI still requires `--confirm` (and `--force` for destructive ones), but the credential itself can now modify your compliance posture, so treat it accordingly.
-3. Copy the **Client ID** and **Client Secret**.
+1. Go to [app.vanta.com/settings/api](https://app.vanta.com/settings/api) and create an OAuth client with the `client_credentials` grant.
+2. Choose its scopes deliberately.
+   - `vanta-api.all:read` alone is the safest default. Reads work, and writes fail at Vanta itself, so the CLI's flags are not the last line of defence.
+   - Add `vanta-api.all:write` if you intend to change things. The CLI still asks for `--confirm`, and `--force` when destructive, but the credential can now modify your compliance data.
+3. Copy the client ID and secret.
 4. Save them:
    ```sh
    mkdir -p ~/.config/elnora-vanta
    printf 'VANTA_CLIENT_ID=your-client-id\nVANTA_CLIENT_SECRET=your-client-secret\n' >> ~/.config/elnora-vanta/.env
    chmod 600 ~/.config/elnora-vanta/.env
    ```
-5. `elnora-vanta frameworks list` should return your enrolled frameworks.
+5. Run `elnora-vanta frameworks list` and you should see your enrolled frameworks.
 
-Credential resolution order: process environment (`VANTA_CLIENT_ID` / `VANTA_CLIENT_SECRET`) → `~/.config/elnora-vanta/.env` (or `$VANTA_CONFIG_DIR/.env`) → a `.env` next to the CLI. Access tokens are cached automatically at `~/.config/elnora-vanta/token.json` (mode `0600`) and refreshed when expired.
+Credentials resolve from the process environment first, then `~/.config/elnora-vanta/.env` (or `$VANTA_CONFIG_DIR/.env`), then a `.env` beside the CLI. Tokens are cached at mode `0600` and refreshed when they expire.
 
 ### Regions
 
-The default API base is `https://api.vanta.com`. EU and Australian tenants set:
+The default API base is `https://api.vanta.com`. EU and Australian tenants set one of:
 
 ```sh
-# EU
 VANTA_API_BASE_URL=https://api.eu.vanta.com
-# Australia
 VANTA_API_BASE_URL=https://api.aus.vanta.com
 ```
 
-An SSRF allow-list pins requests to exactly these three hosts — any other base URL is rejected.
+Requests are pinned to those three hosts, and any other base URL is rejected.
 
 ---
 
-## What you get
+## Using it
 
-- **`elnora-vanta` CLI** *(npm — Step 1)* — complete coverage of the Vanta API, scriptable and JSON-pipeable, with structured errors agents can self-correct from and graded write safety.
-- **`vanta-workspace` Claude Code plugin** *(separate `/plugin install` — Step 2)* — a skill, an agent, four slash commands, and two hooks, all delegating to the CLI.
+### Everyday commands
 
-### Claude Code surfaces
+`frameworks`, `tests`, `controls`, `documents`, `vulns`, `risks`, `people`, `policies`, `vendors`, `groups`, `integrations`, `computers`, `vuln-assets`, `vuln-remediations`. These are read-only by construction and cover the usual questions:
 
-| Surface | Does |
-|---|---|
-| `vanta-workspace` skill | Router + quick reference for the whole CLI; reads the cached compliance reference before hitting the API |
-| `compliance-auditor` agent | Answers open compliance questions — audit readiness, failing tests, evidence gaps — grounded in live Vanta data |
-| `/vanta-status` | One-shot posture snapshot: framework completion, failing tests, overdue vulns |
-| `/vanta-sync` | Regenerates the reference cache (`vanta-tests.md`, `vanta-documents.md`, `vanta-controls.md`, `vanta-vulns.md`) from live Vanta data |
-| `/vanta-vulns` | Vulnerability triage — severity buckets, overdue SLAs, CVE lookup |
-| `/vanta-report` | Compliance report drafted from live data |
-| SessionStart hook | Nags when the reference cache is stale |
-| PreToolUse hook | Blocks any non-GET Vanta API call an agent might attempt — the destructive-operation guard |
-
-### Command groups
-
-`completion`, `computers`, `controls` (list/get/tests/documents), `documents` (list/get/files/links), `frameworks`, `groups`, `integrations`, `people` (`--task-status`), `policies` (`--framework`), `risks`, `tests` (list/get/entities), `vendors`, `vuln-assets`, `vuln-remediations`, `vulns` (list with `--severity`, `--overdue`, `--cve`, `--search`).
-
-Every command prints JSON to stdout (`{ "<data_key>": [...], "count": N }`); errors go to stderr as `{error, suggestion}`. Global flags: `--compact`, `--output json|table|csv`, `--fields <list>`, `--no-color`, plus `--page-size <n>` and `--limit <n>` on lists. Shell completion via `elnora-vanta completion bash|zsh|fish|powershell`.
-
-Frameworks are **discovered per org** — run `elnora-vanta frameworks list` to see yours. Where docs show a framework id (e.g. `soc2`, `iso27001`), it's an example, not an assumption.
-
-Run `elnora-vanta --help` for every group, and `elnora-vanta <group> --help` for its commands.
-
----
-
-## The compliance reference cache
-
-The plugin keeps a cached snapshot of your compliance data so agents answer posture questions instantly. It ships as `references/*.template.md` with obviously fake rows. Run `/vanta-sync` to generate the real files — `vanta-tests.md`, `vanta-documents.md`, `vanta-controls.md`, `vanta-vulns.md` — written to `$VANTA_REFERENCES_DIR` if set, otherwise next to the templates inside the plugin (gitignored).
-
-**Treat the generated files as sensitive.** They are your org's live security posture — failing controls, open vulnerabilities, evidence gaps. They are gitignored and must never be committed; a publication guard in CI enforces that nothing generated ever lands in the repo. There is no real compliance data anywhere in this repository — every real row comes from your own synced cache.
-
----
-
-## The full API
-
-The curated commands above cover everyday compliance questions. The complete
-documented Vanta API — **321 operations across 38 resource groups** — lives
-under `api`, generated from the OpenAPI documents in `spec/`:
-
-```bash
-elnora-vanta api search "policy"              # find operations by name, path or summary
-elnora-vanta api search --risk destructive    # everything that can delete
-elnora-vanta api audits list-audits           # any documented read
-elnora-vanta api --help                       # all 38 groups
+```sh
+elnora-vanta vulns list --severity CRITICAL --overdue
+elnora-vanta policies list --framework soc2
+elnora-vanta tests list --limit 20
 ```
 
-Regenerate after Vanta ships API changes:
+Frameworks are discovered per organisation, so run `elnora-vanta frameworks list` to see yours. Where the docs show an id like `soc2`, it is an example rather than an assumption.
 
-```bash
-pnpm spec:fetch && pnpm generate && pnpm build
+### The full API
+
+Everything Vanta documents lives under `api`, generated from the OpenAPI specs in `spec/`. Search instead of guessing command names:
+
+```sh
+elnora-vanta api search "policy"             # find operations by name, path or summary
+elnora-vanta api search --risk destructive   # everything that can delete
+elnora-vanta api controls list-controls
+elnora-vanta api --help                      # all 38 groups
 ```
 
-## Beyond REST: the MCP surface
+Some endpoint families answer `403` on a standard management client, among them integration connectors, secrets, security tasks, user accounts, per-device records, audits and contracts. Vanta gates those on a differently scoped app, so the request is correct and Vanta is declining it.
 
-Some Vanta capabilities have no public REST endpoint — the answer library,
-knowledge base, privacy assessments, access reviews, TPRM assessment
-automations, and `generatePolicy`. Those live on Vanta's hosted MCP server,
-which needs a user-delegated Vanta **Admin** session rather than the service
-token:
+To pick up Vanta API changes: `pnpm spec:fetch && pnpm generate && pnpm build`
 
-```bash
-elnora-vanta mcp login                       # browser, once; token cached 0600
-elnora-vanta mcp tools                       # 165 tools, with risk + arguments
-elnora-vanta mcp tools --name generatePolicy # one tool's full input schema
+### Capabilities that are not in the REST API
+
+The answer library, knowledge base, privacy assessments, access reviews, TPRM assessment automations and policy generation live on Vanta's hosted MCP server. That needs a Vanta Admin sign-in rather than the service token:
+
+```sh
+elnora-vanta mcp login                        # browser, once
+elnora-vanta mcp tools                        # 165 tools, with risk and arguments
+elnora-vanta mcp tools --name generatePolicy  # one tool's input schema
 elnora-vanta mcp call getSlas
 ```
 
-`mcp call` obeys exactly the same `--confirm` / `--force` / `--dry-run` rules as
-`api`. EU and AUS tenants set `VANTA_MCP_URL` (pinned to Vanta's three MCP
-hosts).
+`mcp call` follows the same write rules as `api`. EU and Australian tenants set `VANTA_MCP_URL`, pinned to Vanta's three MCP hosts.
+
+### Output
+
+Commands print JSON to stdout, and errors go to stderr as `{error, suggestion}`. Global flags: `--compact`, `--output json|table|csv`, `--fields <list>`, `--no-color`, plus `--page-size` and `--limit` on lists. Shell completion comes from `elnora-vanta completion bash|zsh|fish|powershell`.
+
+Exit codes: `0` success, `2` usage, `3` auth, `4` not found, `5` rate limit, `6` a write refused for want of `--confirm` or `--force`.
+
+---
 
 ## Write safety
 
-Reads run immediately. Writes do not happen by accident:
-
-| Risk | Methods | To execute |
-|------|---------|------------|
+| Risk | Operations | To run it |
+|---|---|---|
 | `read` | `GET` | runs immediately |
-| `write` | `POST` `PUT` `PATCH` | `--confirm` |
-| `destructive` | `DELETE`, `deactivate`/`archive`/`revoke`/`remove` | `--confirm` **and** `--force` |
+| `write` | `POST`, `PUT`, `PATCH` | `--confirm` |
+| `destructive` | `DELETE`, and anything that deactivates, archives, revokes, removes or offboards | `--confirm` and `--force` |
 
-Without the flags, the CLI prints the exact request it would have sent and
-exits without sending it:
+Without the flags you get the request that would have been sent, and nothing goes to Vanta:
 
-```bash
+```console
 $ elnora-vanta api vendors delete-by-id VENDOR-ID
 {
   "dryRun": true,
@@ -194,25 +161,38 @@ $ elnora-vanta api vendors delete-by-id VENDOR-ID
 }
 ```
 
-`--dry-run` overrides everything, so an agent handed a command line that already
-contains `--confirm` still cannot mutate anything. The plugin's `PreToolUse`
-hook additionally blocks `--force` outright, reserving destructive changes for a
-human at a terminal.
+A refusal exits `6`, so a script or an agent can tell it apart from success. `--dry-run` wins over `--confirm`, which means an agent handed a ready-made command line still cannot change anything. The plugin's hook goes further and blocks `--force`, keeping deletions with a person at a terminal.
 
-- **Separate scopes, separate tokens** — reads present a `vanta-api.all:read`
-  token, writes a `vanta-api.all:write` one. An install that never writes never
-  requests the write scope. To pin the CLI to reads at the credential layer,
-  grant your OAuth client only `vanta-api.all:read`.
-- **SSRF allow-list** — requests go only to `api.vanta.com`, `api.eu.vanta.com`, or `api.aus.vanta.com`.
-- **Secrets stay local** — credentials in a `0600` `.env`, tokens cached at `0600`, secrets redacted on every error path.
+Reads and writes use separate OAuth scopes and separate cached tokens, so an install that does not write does not request the write scope. Requests go to `api.vanta.com`, `api.eu.vanta.com` or `api.aus.vanta.com` and nowhere else. Credentials sit in a `0600` file, tokens are cached at `0600`, and secrets are redacted on every error path.
 
-Full details in [SAFETY.md](SAFETY.md).
+Full details, including the limits of each layer, are in [SAFETY.md](SAFETY.md).
+
+---
+
+## What the plugin adds
+
+| Surface | What it does |
+|---|---|
+| `vanta-workspace` skill | Routes a question to the right command, and reads the cached reference before calling the API |
+| `compliance-auditor` agent | Answers open questions on audit readiness, failing tests and evidence gaps from live data |
+| `/vanta-status` | Posture snapshot: framework completion, failing tests, overdue vulnerabilities |
+| `/vanta-sync` | Regenerates the cached compliance reference from live data |
+| `/vanta-vulns` | Vulnerability triage by severity, overdue SLA and CVE |
+| `/vanta-report` | A compliance report drafted from live data |
+| SessionStart hook | Says when the cached reference has gone stale |
+| PreToolUse hook | Blocks `--force`, so an agent cannot execute a destructive operation |
+
+### The compliance reference cache
+
+The plugin keeps a snapshot of your compliance data so agents can answer posture questions without an API round trip. It ships as `references/*.template.md` with obviously fake rows, and `/vanta-sync` writes the real files to `$VANTA_REFERENCES_DIR`, or beside the templates if that is unset.
+
+Treat the generated files as sensitive, because they are your live security posture: failing controls, open vulnerabilities, evidence gaps. They are gitignored, and a CI guard fails the build if generated data is ever committed. There is no real compliance data anywhere in this repository. Every real row comes from your own synced cache.
 
 ---
 
 ## Part of the Elnora family
 
-Open-source agent tooling from [Elnora AI](https://github.com/Elnora-AI) — free, universal, config-driven tools that wire Claude Code (or any AI coding agent) into the systems you run your company on. Each works 100% standalone; install several and they chain into end-to-end workflows.
+Open-source agent tooling from [Elnora AI](https://github.com/Elnora-AI): free, config-driven tools that wire Claude Code, or any AI coding agent, into the systems you run your company on. Each one works standalone, and they chain together when you install several.
 
 <!-- ELNORA-FAMILY:START -->
 - [elnora-linear](https://github.com/Elnora-AI/elnora-linear) — Linear issue management — search, bulk edit, agents, and a config-driven curator
@@ -228,11 +208,13 @@ Open-source agent tooling from [Elnora AI](https://github.com/Elnora-AI) — fre
 
 ## Contributing
 
-Issues and PRs welcome at [github.com/Elnora-AI/elnora-vanta](https://github.com/Elnora-AI/elnora-vanta). Keep the safety grading intact — a new mutating operation must be classified `write` or `destructive` and go through the same gate; anything that lets a write execute without `--confirm` will not be merged. Questions: opensource@elnora.ai.
+Issues and PRs are welcome at [github.com/Elnora-AI/elnora-vanta](https://github.com/Elnora-AI/elnora-vanta)
+
+Keep the safety grading intact. A new mutating operation has to be classified `write` or `destructive` and go through the same gate, and anything that lets a write execute without `--confirm` will not be merged. Questions: opensource@elnora.ai
 
 ## Security
 
-Found a vulnerability? Email security@elnora.ai — do not open a public issue. See [SAFETY.md](SAFETY.md) for the threat model.
+Found a vulnerability? Email security@elnora.ai rather than opening a public issue. [SAFETY.md](SAFETY.md) has the threat model.
 
 ## License
 
