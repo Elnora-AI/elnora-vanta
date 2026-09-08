@@ -60,10 +60,13 @@ npm install -g @elnora-ai/vanta@latest      # the CLI
 ```
 
 ```
-/plugin marketplace update elnora-vanta     # the plugin, then restart Claude Code
+/plugin marketplace update elnora-vanta     # the plugin
+/reload-plugins                             # then load it, in that order
 ```
 
-Upgrading only the CLI leaves the newer binary paired with the older hook, and a hook predating a guard it was written to enforce will let the command through. `elnora-vanta --version` and the version `/plugin` reports should match.
+The hook a session enforces is the one it loaded at start, not the one on disk, so the update takes effect only after the reload and only if the reload comes after it. A plugin can also be installed at more than one scope, and `/plugin` reports each separately, so check that every scope shows the new version rather than the first one you see.
+
+Until then the newer binary is paired with the older hook, and a hook predating a guard it was written to enforce lets the command through. `elnora-vanta --version` and the version `/plugin` reports should match.
 
 ### Codex, Cursor, and other agents
 

@@ -89,14 +89,29 @@ of them are now covered and pinned by tests, which is the point worth taking
 from it: the list of shapes is empirical, so treat it as one that will grow
 again.
 
-The hook also ships on its own schedule. The CLI comes from npm and the plugin
-from the marketplace, so `npm install -g @elnora-ai/vanta@latest` upgrades the
-binary and leaves the plugin where it was, and on an already-installed plugin
-`/plugin install` reports it as installed and changes nothing. A CLI that has
-learned a new operation can therefore be guarded by a hook that predates the
-rule written for it. Run `/plugin marketplace update elnora-vanta`, restart
-Claude Code, and check that `elnora-vanta --version` matches the version
-`/plugin` reports.
+The hook also ships on its own schedule, and a session enforces the copy it
+loaded rather than the copy on disk. The CLI comes from npm and the plugin from
+the marketplace, so `npm install -g @elnora-ai/vanta@latest` upgrades the binary
+and leaves the plugin where it was, and on an already-installed plugin
+`/plugin install` reports it as installed and changes nothing. Updating the
+plugin files is not enough either: the new hook takes effect only after
+`/reload-plugins`, and only if the reload comes after the update. A plugin
+installed at more than one scope updates per scope, so one scope can report the
+new version while another still runs the old hook.
+
+This was observed rather than reasoned about. On a machine running the 0.1.2
+CLI with 0.1.2 plugin files on disk but a session that had reloaded before the
+update, `api vendors delete-by-id … --confirm --force` was not blocked and the
+DELETE reached Vanta, while `documents delete …` in the same session was
+blocked. The second rule exists in both versions and the `--force` rule only in
+the newer one, which is how the stale hook identified itself.
+
+So: `/plugin marketplace update elnora-vanta`, then `/reload-plugins`, then
+check that `elnora-vanta --version` matches the version `/plugin` reports for
+every scope. Between the CLI upgrade and that reload, the flags in
+`src/safety.ts` are the only thing standing between an agent and `--force`,
+which is the sharpest available argument for treating them, and not this hook,
+as the real control.
 
 **The CLI's own gate is the control.** `--confirm` and `--force` are enforced in
 `src/safety.ts` before any request is built, they apply to every caller
