@@ -22,7 +22,19 @@ WRITE_METHODS = ["POST", "PUT", "PATCH", "DELETE"]
 # arguments (env/command/xargs/nohup/timeout). Used as a lookbehind-equivalent
 # prefix so we only match real invocations, not quoted strings inside
 # grep/echo/cat/etc.
-_STATEMENT_PREFIX = r"(?:^|[\n;&|`]|\$\()\s*(?:(?:env|command|xargs|nohup|timeout)\s+(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+|-\S+\s+|\d+\s+)*)?"
+#
+# Also tolerates the two shapes that reach the same binary by another route:
+# a bare `VAR=value ` assignment prefix, and a package runner
+# (npx / pnpm exec / npm run / yarn / bunx).
+_ASSIGNMENTS = r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
+_RUNNER = r"(?:(?:npx|pnpm|npm|yarn|bunx|tsx|node)\s+(?:exec\s+|run\s+|dlx\s+|--\s+)*)?"
+_STATEMENT_PREFIX = (
+    r"(?:^|[\n;&|`]|\$\()\s*"
+    + _ASSIGNMENTS
+    + r"(?:(?:env|command|xargs|nohup|timeout)\s+(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+|-\S+\s+|\d+\s+)*)?"
+    + _ASSIGNMENTS
+    + _RUNNER
+)
 
 # Blocked CLI subcommands — each requires an actual CLI invocation
 # (optional `node ` or path prefix) at statement start, followed by the subcommand.
@@ -67,9 +79,12 @@ _API_WRITE_RE = re.compile(
 # deletion, so it is the one an agent may not use.
 _API_FORCE_RE = re.compile(
     _STATEMENT_PREFIX
-    + r"(?:node\s+)?\S*(?:vanta\.js|main\.js|elnora-vanta)\s+"
-    + r"(?=[^\n;&|]*\b(?:api|mcp)\b)"
-    + r"(?=[^\n;&|]*--force\b)",
+    + r"(?:node\s+)?\S*(?:vanta\.js|main\.(?:js|ts)|elnora-vanta|@elnora-ai/vanta|dev)\s+"
+    # A backslash-newline is line wrapping, not a statement boundary, so the
+    # lookaheads have to see through it: splitting a long command across lines
+    # is ordinary formatting and must not fall out of the guard.
+    + r"(?=(?:[^\n;&|]|\\\n)*\b(?:api|mcp)\b)"
+    + r"(?=(?:[^\n;&|]|\\\n)*--force\b)",
     re.IGNORECASE,
 )
 

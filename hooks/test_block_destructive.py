@@ -14,6 +14,14 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 BLOCKED = [
+    # Routes to the same binary that once slipped past the --force rule.
+    "elnora-vanta api controls delete-control X --confirm \\\n--force",
+    "npx @elnora-ai/vanta api controls delete-control X --confirm --force",
+    "VANTA_CONFIG_DIR=/x elnora-vanta api controls delete-control X --confirm --force",
+    "pnpm exec elnora-vanta api controls delete-control X --confirm --force",
+    "tsx src/main.ts api controls delete-control X --confirm --force",
+    "pnpm dev api controls delete-control X --confirm --force",
+    "npm run dev api controls delete-control X --confirm --force",
     # The --force rule: destructive execution is reserved for a human.
     "elnora-vanta api vendors delete-by-id X --confirm --force",
     "elnora-vanta api controls delete-control X --force",
@@ -38,6 +46,11 @@ BLOCKED = [
 ]
 
 ALLOWED = [
+    # Package-runner commands that have nothing to do with the CLI.
+    "pnpm dev",
+    "npm run build",
+    "npx prettier --write .",
+    "cat docs/api-force-notes.md",
     # Reads and confirmed non-destructive writes are the agent's to run.
     "elnora-vanta api frameworks list-frameworks",
     "elnora-vanta api vendors create-vendor --body '{}' --confirm",
