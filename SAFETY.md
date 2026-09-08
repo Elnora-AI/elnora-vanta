@@ -14,7 +14,7 @@ Every operation carries a risk level, generated from the OpenAPI documents in
 |------|---------|------------|
 | `read` | `GET` | runs immediately |
 | `write` | `POST` `PUT` `PATCH` | `--confirm` |
-| `destructive` | `DELETE`, and any `deactivate`/`archive`/`revoke`/`remove` operation | `--confirm` **and** `--force` |
+| `destructive` | `DELETE`, and any `deactivate`/`archive`/`revoke`/`remove`/`offboard` operation | `--confirm` **and** `--force` |
 
 Without those flags the CLI prints the exact request it *would* have sent —
 method, path, query, body — and exits without sending it. `--dry-run` overrides

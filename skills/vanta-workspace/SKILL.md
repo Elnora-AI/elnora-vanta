@@ -49,6 +49,11 @@ graded, and the grade is asserted by the test suite:
 - `[write]` prints the request and stops unless `--confirm` is passed.
 - `[destructive]` prints the request and stops unless `--confirm` **and** `--force`.
 
+Exit codes matter more than the JSON here: `0` success, `2` usage, `3` auth,
+`4` not found, `5` rate limit, `6` a write refused for want of `--confirm` or
+`--force`. A refusal is not a success, so check the status rather than assuming
+a command that printed JSON did something.
+
 `--dry-run` always wins. **Never add `--force` on the user's behalf** — the
 PreToolUse hook blocks it, because deleting live compliance evidence is a human
 decision. Show the user the printed plan and let them run it themselves.

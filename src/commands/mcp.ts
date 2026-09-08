@@ -17,7 +17,7 @@ import { evaluateSafety, parseBodyArgument } from "../safety.js";
 import { EXIT_CODES, ValidationError } from "../utils/errors.js";
 
 const READ_PREFIXES = ["list", "get", "search", "fetch", "check", "download"];
-const DESTRUCTIVE_PREFIXES = ["delete", "deactivate", "remove", "reject", "unlink", "archive", "revoke"];
+const DESTRUCTIVE_PREFIXES = ["delete", "deactivate", "remove", "reject", "unlink", "archive", "revoke", "offboard"];
 
 /**
  * Classify an MCP tool by its name. Vanta names tools verb-first and
