@@ -130,12 +130,59 @@ The plugin keeps a cached snapshot of your compliance data so agents answer post
 
 ---
 
-## Read-only guarantee
+## The full API
 
-- **HTTP GET only, enforced three ways**: the HTTP client refuses non-GET methods in code, the plugin's `PreToolUse` hook blocks any attempt at a mutating Vanta call, and the OAuth scope `vanta-api.all:read` means the token itself cannot write.
+The curated commands above cover everyday compliance questions. The complete
+documented Vanta API — **321 operations across 38 resource groups** — lives
+under `api`, generated from the OpenAPI documents in `spec/`:
+
+```bash
+elnora-vanta api search "policy"              # find operations by name, path or summary
+elnora-vanta api search --risk destructive    # everything that can delete
+elnora-vanta api audits list-audits           # any documented read
+elnora-vanta api --help                       # all 38 groups
+```
+
+Regenerate after Vanta ships API changes:
+
+```bash
+pnpm spec:fetch && pnpm generate && pnpm build
+```
+
+## Write safety
+
+Reads run immediately. Writes do not happen by accident:
+
+| Risk | Methods | To execute |
+|------|---------|------------|
+| `read` | `GET` | runs immediately |
+| `write` | `POST` `PUT` `PATCH` | `--confirm` |
+| `destructive` | `DELETE`, `deactivate`/`archive`/`revoke`/`remove` | `--confirm` **and** `--force` |
+
+Without the flags, the CLI prints the exact request it would have sent and
+exits without sending it:
+
+```bash
+$ elnora-vanta api vendors delete-by-id VENDOR-ID
+{
+  "dryRun": true,
+  "wouldRequest": { "operationId": "DeleteById", "method": "DELETE", "path": "/vendors/VENDOR-ID", "risk": "destructive" },
+  "blocked": "This destructive operation was not sent.",
+  "addFlags": ["--confirm", "--force"]
+}
+```
+
+`--dry-run` overrides everything, so an agent handed a command line that already
+contains `--confirm` still cannot mutate anything. The plugin's `PreToolUse`
+hook additionally blocks `--force` outright, reserving destructive changes for a
+human at a terminal.
+
+- **Separate scopes, separate tokens** — reads present a `vanta-api.all:read`
+  token, writes a `vanta-api.all:write` one. An install that never writes never
+  requests the write scope. To pin the CLI to reads at the credential layer,
+  grant your OAuth client only `vanta-api.all:read`.
 - **SSRF allow-list** — requests go only to `api.vanta.com`, `api.eu.vanta.com`, or `api.aus.vanta.com`.
 - **Secrets stay local** — credentials in a `0600` `.env`, tokens cached at `0600`, secrets redacted on every error path.
-- **Nothing leaves your machine** except GET requests to Vanta's own API.
 
 Full details in [SAFETY.md](SAFETY.md).
 

@@ -26,7 +26,7 @@ describe("vanta CLI plumbing", () => {
 	it("--help exits 0 and shows all global options", () => {
 		const { stdout, exitCode } = run("--help");
 		expect(exitCode).toBe(0);
-		expect(stdout).toContain("Read-only Vanta compliance CLI");
+		expect(stdout).toContain("Vanta compliance CLI");
 		expect(stdout).toContain("--compact");
 		expect(stdout).toContain("--output");
 		expect(stdout).toContain("--fields");

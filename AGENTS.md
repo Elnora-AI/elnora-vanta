@@ -22,9 +22,22 @@ Create the OAuth client in your Vanta dashboard at [app.vanta.com/settings/api](
 
 Credential resolution order: process env `VANTA_CLIENT_ID` / `VANTA_CLIENT_SECRET` → `~/.config/elnora-vanta/.env` (or `$VANTA_CONFIG_DIR/.env`) → a `.env` next to the CLI. The OAuth token is auto-cached at `~/.config/elnora-vanta/token.json` (mode 0600) and refreshed on expiry — no manual token handling.
 
-## Read-only guarantee
+## Write safety — read this before using `api`
 
-The CLI **cannot modify your Vanta tenant.** Every request is HTTP GET, enforced three ways: in the HTTP client code, by a PreToolUse guard hook (Claude Code plugin), and by the OAuth scope itself (`vanta-api.all:read`). Requests go only to `api.vanta.com`, `api.eu.vanta.com`, or `api.aus.vanta.com` (SSRF allowlist). See [`SAFETY.md`](SAFETY.md).
+The curated top-level commands (`frameworks`, `tests`, `controls`, ...) are
+read-only by construction. The full API lives under `api` and is graded:
+
+- `[read]` runs immediately.
+- `[write]` prints the request and stops unless you pass `--confirm`.
+- `[destructive]` prints the request and stops unless you pass `--confirm` **and** `--force`.
+
+`--dry-run` always wins. **Do not add `--force` on a user's behalf** — the
+plugin's PreToolUse hook blocks it, because deleting live compliance evidence is
+a human decision. Surface the printed plan to the user and let them run it.
+
+Discover operations with `elnora-vanta api search <term>` rather than guessing
+command names. Requests go only to `api.vanta.com`, `api.eu.vanta.com`, or
+`api.aus.vanta.com` (SSRF allowlist). See [`SAFETY.md`](SAFETY.md).
 
 ## Dispatch — when to use what
 

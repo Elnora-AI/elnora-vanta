@@ -1,7 +1,7 @@
 {
   "name": "@elnora-ai/vanta",
   "version": "0.1.1",
-  "description": "Read-only Vanta compliance CLI and Claude Code plugin — frameworks, tests, controls, documents, and vulnerabilities as agent-friendly JSON",
+  "description": "Vanta compliance CLI and Claude Code plugin \u2014 the complete documented REST API (321 operations) as agent-friendly JSON, with dry-run-by-default write safety",
   "type": "module",
   "bin": {
     "elnora-vanta": "dist/main.js"
@@ -9,6 +9,7 @@
   "main": "dist/main.js",
   "files": [
     "dist/",
+    "spec/",
     "commands/",
     "agents/",
     "skills/",
@@ -37,7 +38,9 @@
     "lint": "biome check src/ __tests__/ scripts/",
     "lint:fix": "biome check --write src/ __tests__/ scripts/",
     "format": "biome format --write src/ __tests__/ scripts/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "spec:fetch": "tsx scripts/fetch-specs.ts",
+    "generate": "tsx scripts/generate-operations.ts"
   },
   "keywords": [
     "vanta",

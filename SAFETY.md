@@ -1,22 +1,41 @@
 # Safety guardrails
 
-`elnora-vanta` lets an AI agent query your compliance posture without being able
-to change it — and without your posture data ever entering a git repo. Three
-defense layers ship in this repository; the first holds at the CLI layer, so it
-cannot be talked around by an agent.
+`elnora-vanta` covers the whole documented Vanta API, and makes changing your
+compliance program something you have to mean — without your posture data ever
+entering a git repo. Three defense layers ship in this repository; the first
+holds at the CLI layer, so it cannot be talked around by an agent.
 
-## Layer 1: read-only client + read-only credential
+## Layer 1: graded execution + scope separation
 
-The CLI is **intentionally read-only**. Every request is a hardcoded `GET` —
-`vantaFetch()` sets the method itself and no write code path exists in the
-source. Anything that modifies Vanta data (creating documents, deactivating
-vulnerabilities, updating vendors) must be done in the Vanta dashboard.
+Every operation carries a risk level, generated from the OpenAPI documents in
+`spec/` and asserted by the test suite:
 
-The credential matches: the OAuth client you create at
-`https://app.vanta.com/settings/api` should be granted **only** the
-`vanta-api.all:read` scope, and the CLI requests exactly that scope when it
-exchanges client credentials for a token. Even a hypothetical write attempt
-would be rejected by Vanta itself.
+| Risk | Methods | To execute |
+|------|---------|------------|
+| `read` | `GET` | runs immediately |
+| `write` | `POST` `PUT` `PATCH` | `--confirm` |
+| `destructive` | `DELETE`, and any `deactivate`/`archive`/`revoke`/`remove` operation | `--confirm` **and** `--force` |
+
+Without those flags the CLI prints the exact request it *would* have sent —
+method, path, query, body — and exits without sending it. `--dry-run` overrides
+everything, so an agent handed a command line that already contains `--confirm`
+still cannot mutate anything. The curated top-level commands (`frameworks`,
+`tests`, `controls`, ...) remain read-only by construction: they call
+`vantaFetch()`, which cannot issue anything but a `GET`.
+
+**Read and write use separate OAuth scopes and separate tokens.** A read
+request presents a `vanta-api.all:read` token cached at `token.json`; a write
+presents a `vanta-api.all:write` token cached at `token-write.json`. A
+deployment that never writes never requests the write scope, and never has a
+write-capable token on disk.
+
+That separation is the real control, because the credential itself may be more
+powerful than you assume. If the OAuth client at
+`https://app.vanta.com/settings/api` has been granted `vanta-api.all:write`,
+Vanta **will** honour a write — the API does not stop you. To pin this CLI to
+reads at the credential layer, grant the OAuth client only
+`vanta-api.all:read`; every write then fails at Vanta's token endpoint rather
+than relying on the flags alone.
 
 Nothing leaves your machine except to Vanta: every request is checked against
 an SSRF host allow-list (`api.vanta.com`, `api.eu.vanta.com`,
@@ -40,12 +59,15 @@ third-party endpoint.
 ## Layer 2: PreToolUse hook
 
 `hooks/block-destructive.py` is registered in `hooks/hooks.json` as a
-`PreToolUse` hook on `Bash`. It is defense in depth on top of the read-only
-client — it inspects every shell command before execution and blocks:
+`PreToolUse` hook on `Bash`. It draws a line the flags alone cannot: an agent
+may read freely and may perform a confirmed non-destructive write, but
+**`--force` is reserved for a human at a terminal**. It inspects every shell
+command before execution and blocks:
 
+- **Destructive executions** — any `elnora-vanta api ... --force`, the flag that
+  turns a printed plan into a real deletion.
 - **Write-shaped CLI calls** — `documents create` / `delete` / `bulk-delete` /
-  `link` / `set-owner` invocations against the CLI. The CLI doesn't implement
-  these; the hook guards against a mutated or look-alike build.
+  `link` / `set-owner` invocations against the legacy command names.
 - **HTTP writes to any Vanta regional host** — a real HTTP client (`curl`,
   `wget`, `http`, `httpie`) in the same statement as a Vanta API host and a
   `POST`/`PUT`/`PATCH`/`DELETE` method, covering all three regions.

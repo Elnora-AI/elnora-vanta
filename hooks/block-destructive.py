@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-Vanta workspace safety hook — blocks ALL write operations.
-The elnora-vanta CLI is read-only by design. This hook blocks any attempt
-to use POST, PUT, PATCH, or DELETE against the Vanta API.
+Vanta workspace safety hook — keeps destructive compliance changes out of agent hands.
+
+The CLI exposes the full Vanta API, but a write only executes with --confirm and
+a destructive one (DELETE, deactivate, archive, revoke, remove) also needs
+--force. This hook draws the line at that second flag: an agent may read freely
+and may perform a confirmed non-destructive write, but --force is reserved for a
+human at a terminal. Raw curl/wget writes against the Vanta API stay blocked.
 
 This is a PreToolUse hook that inspects Bash commands before execution.
 """
@@ -58,6 +62,17 @@ _API_WRITE_RE = re.compile(
 )
 
 
+# Destructive execution via the generated `api` tree. --force is the flag that
+# turns a printed plan into a real deletion, so it is the one an agent may not use.
+_API_FORCE_RE = re.compile(
+    _STATEMENT_PREFIX
+    + r"(?:node\s+)?\S*(?:vanta\.js|main\.js|elnora-vanta)\s+"
+    + r"(?=[^\n;&|]*\bapi\b)"
+    + r"(?=[^\n;&|]*--force\b)",
+    re.IGNORECASE,
+)
+
+
 def check_command(command: str) -> "tuple[bool, str]":
     """Check if a command is a write operation. Returns (blocked, reason).
 
@@ -68,6 +83,14 @@ def check_command(command: str) -> "tuple[bool, str]":
     if match:
         matched_text = match.group(0).strip()
         return True, f"Blocked write operation: '{matched_text}'"
+
+    match = _API_FORCE_RE.search(command)
+    if match:
+        return True, (
+            "Blocked destructive Vanta operation: --force deletes live compliance "
+            "evidence and must be run by a human, not an agent. Drop --force to see "
+            "the request plan instead."
+        )
 
     match = _API_WRITE_RE.search(command)
     if match:

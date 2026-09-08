@@ -3,7 +3,7 @@
  * Wraps fetch() with auth, rate limiting, and retry logic.
  */
 
-import { clearCachedToken, getAccessToken } from "./auth.js";
+import { type ApiScope, clearCachedToken, getAccessToken } from "./auth.js";
 import { apiOrigin } from "./config.js";
 import { AuthError, CliError, RateLimitError } from "./utils/errors.js";
 import { acquireToken, getRetryAfterMs, sleep } from "./utils/rate-limit.js";
@@ -50,6 +50,10 @@ function apiError(status: number, body: string, endpoint: string): CliError {
 
 async function parseJsonResponse<T>(response: Response, url: string): Promise<T> {
 	const text = await response.text();
+	// 204 No Content, and the empty 200s some DELETE endpoints return, carry no body.
+	if (response.status === 204 || text.trim() === "") {
+		return { ok: true, status: response.status } as T;
+	}
 	try {
 		return JSON.parse(text) as T;
 	} catch (parseError: unknown) {
@@ -69,10 +73,33 @@ export function safeId(id: string): string {
 	return encodeURIComponent(id);
 }
 
-export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "method">): Promise<T> {
+/** HTTP methods the client will send. Anything else is rejected before a request is built. */
+const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
+
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+/**
+ * Issue an authenticated request against the Vanta API.
+ *
+ * Writes reach this function only after src/safety.ts has cleared them: the
+ * confirmation gate lives at the command layer so that a write is impossible
+ * to trigger accidentally, while this layer stays a faithful HTTP client.
+ */
+export async function vantaRequest<T>(
+	method: HttpMethod,
+	path: string,
+	options?: Omit<RequestInit, "method">,
+): Promise<T> {
+	if (!ALLOWED_METHODS.has(method)) {
+		throw new Error(`Refusing to send request with unsupported method "${method}"`);
+	}
+	// Reads and writes carry different OAuth scopes; a read-only install never
+	// requests the write scope at all.
+	const scope: ApiScope = method === "GET" ? "read" : "write";
+
 	await acquireToken();
 
-	const token = await getAccessToken();
+	const token = await getAccessToken(scope);
 	const origin = apiOrigin();
 	const allowedHost = new URL(origin).hostname;
 	const url = path.startsWith("http") ? path : `${origin}/v1${path.startsWith("/") ? "" : "/"}${path}`;
@@ -95,15 +122,15 @@ export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "m
 
 	const response = await fetch(url, {
 		...options,
-		method: "GET", // Read-only CLI — never allow write methods
+		method,
 		headers: makeHeaders(token),
 		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
 	});
 
 	// Handle 401 — clear cached token (file + memory) and retry once
 	if (response.status === 401) {
-		await clearCachedToken();
-		const newToken = await getAccessToken();
+		await clearCachedToken(scope);
+		const newToken = await getAccessToken(scope);
 
 		if (newToken === token) {
 			throw new AuthError(
@@ -115,7 +142,7 @@ export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "m
 		await acquireToken();
 		const retryResponse = await fetch(url, {
 			...options,
-			method: "GET",
+			method,
 			headers: makeHeaders(newToken),
 			signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
 		});
@@ -138,10 +165,10 @@ export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "m
 		await sleep(retryMs);
 
 		await acquireToken();
-		const retryToken = await getAccessToken();
+		const retryToken = await getAccessToken(scope);
 		const retryResponse = await fetch(url, {
 			...options,
-			method: "GET",
+			method,
 			headers: makeHeaders(retryToken),
 			signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
 		});
@@ -172,4 +199,12 @@ export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "m
 	}
 
 	return parseJsonResponse<T>(response, url);
+}
+
+/**
+ * Read-only convenience wrapper — the entry point every hand-written command uses.
+ * Cannot issue a write no matter what it is passed.
+ */
+export async function vantaFetch<T>(path: string, options?: Omit<RequestInit, "method">): Promise<T> {
+	return vantaRequest<T>("GET", path, options);
 }
