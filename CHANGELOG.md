@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/Elnora-AI/elnora-vanta/compare/v0.1.1...v0.1.2) (2026-09-08)
+
+
+### Features
+
+* **api:** expose the full Vanta REST API and MCP surface with graded write safety ([#21](https://github.com/Elnora-AI/elnora-vanta/issues/21)) ([8baf08f](https://github.com/Elnora-AI/elnora-vanta/commit/8baf08f288aa3a61797932c425239874f4c8d975))
+
 ## [0.1.1](https://github.com/Elnora-AI/elnora-vanta/compare/v0.1.0...v0.1.1) (2026-07-14)
 
 
