@@ -31,9 +31,10 @@ export class CliError extends Error {
 }
 
 export class AuthError extends CliError {
-	constructor(message?: string) {
+	constructor(message?: string, suggestion?: string) {
 		super(message ?? "Vanta credentials not found. Set VANTA_CLIENT_ID and VANTA_CLIENT_SECRET in your .env file.", {
 			suggestion:
+				suggestion ??
 				"Add VANTA_CLIENT_ID=... and VANTA_CLIENT_SECRET=... to your .env file. Get credentials from Vanta > Settings > Developer Console.",
 			exitCode: EXIT_CODES.AUTH,
 		});

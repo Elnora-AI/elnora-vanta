@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { classifyTool } from "../src/commands/mcp.js";
 import { OPERATIONS } from "../src/generated/operations.js";
 import { evaluateSafety, parseBodyArgument } from "../src/safety.js";
 
@@ -113,5 +114,49 @@ describe("generated operation registry", () => {
 		for (const operation of OPERATIONS) {
 			expect(operation.path.startsWith("/v1/"), `${operation.id} double-prefixes /v1`).toBe(false);
 		}
+	});
+});
+
+describe("MCP tool risk classification", () => {
+	it("treats Vanta's read verbs as reads", () => {
+		for (const name of [
+			"listFrameworks",
+			"getSlas",
+			"searchKnowledgeBase",
+			"fetchTrustCenterContent",
+			"downloadPolicy",
+			"checkRemainingPolicyDrafts",
+		]) {
+			expect(classifyTool(name), name).toBe("read");
+		}
+	});
+
+	it("treats deletion-shaped verbs as destructive", () => {
+		for (const name of [
+			"deletePolicy",
+			"deactivateControls",
+			"removeKnowledgeBaseTags",
+			"rejectPendingAnswerLibraryQuestionAnswers",
+			"unlinkRiskScenarioFromImpactAssessment",
+		]) {
+			expect(classifyTool(name), name).toBe("destructive");
+		}
+	});
+
+	it("treats mutating verbs as writes", () => {
+		for (const name of [
+			"createControls",
+			"updatePolicyDetails",
+			"uploadNewPolicyDraft",
+			"generatePolicy",
+			"triggerTestRun",
+			"approvePendingAnswerLibraryQuestionAnswers",
+		]) {
+			expect(classifyTool(name), name).toBe("write");
+		}
+	});
+
+	it("fails closed on an unrecognised verb", () => {
+		expect(classifyTool("frobnicateEverything")).toBe("write");
 	});
 });

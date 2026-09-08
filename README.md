@@ -149,6 +149,25 @@ Regenerate after Vanta ships API changes:
 pnpm spec:fetch && pnpm generate && pnpm build
 ```
 
+## Beyond REST: the MCP surface
+
+Some Vanta capabilities have no public REST endpoint — the answer library,
+knowledge base, privacy assessments, access reviews, TPRM assessment
+automations, and `generatePolicy`. Those live on Vanta's hosted MCP server,
+which needs a user-delegated Vanta **Admin** session rather than the service
+token:
+
+```bash
+elnora-vanta mcp login                       # browser, once; token cached 0600
+elnora-vanta mcp tools                       # 165 tools, with risk + arguments
+elnora-vanta mcp tools --name generatePolicy # one tool's full input schema
+elnora-vanta mcp call getSlas
+```
+
+`mcp call` obeys exactly the same `--confirm` / `--force` / `--dry-run` rules as
+`api`. EU and AUS tenants set `VANTA_MCP_URL` (pinned to Vanta's three MCP
+hosts).
+
 ## Write safety
 
 Reads run immediately. Writes do not happen by accident:

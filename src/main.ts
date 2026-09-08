@@ -48,6 +48,7 @@ import { setupDocumentsCommand } from "./commands/documents.js";
 import { setupFrameworksCommand } from "./commands/frameworks.js";
 import { setupGroupsCommand } from "./commands/groups.js";
 import { setupIntegrationsCommand } from "./commands/integrations.js";
+import { setupMcpCommand } from "./commands/mcp.js";
 import { setupPeopleCommand } from "./commands/people.js";
 import { setupPoliciesCommand } from "./commands/policies.js";
 import { setupRisksCommand } from "./commands/risks.js";
@@ -83,6 +84,7 @@ setupComputersCommand(program);
 setupVulnAssetsCommand(program);
 setupVulnRemediationsCommand(program);
 setupApiCommand(program);
+setupMcpCommand(program);
 setupCompletionCommand(program);
 
 program.option("--compact", "Compact JSON output (saves tokens)");

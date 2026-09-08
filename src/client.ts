@@ -38,14 +38,22 @@ function sanitizeErrorBody(body: string, maxLen = 200): string {
 	return truncated.replace(/[a-zA-Z0-9_-]{40,}/g, "[REDACTED]");
 }
 
+function suggestionFor(status: number, endpoint: string): string {
+	if (status === 404) return `Resource not found at ${endpoint}. Check the ID and try again.`;
+	if (status === 403) {
+		return (
+			`Vanta refused this resource for your OAuth client. Several endpoint families ` +
+			`(integration connectors, secrets, security tasks, user accounts, per-device records, audits, contracts) ` +
+			`require a differently-scoped Vanta app than a management API client — the CLI sent the request correctly ` +
+			`and Vanta declined it. Check the client's grants at https://app.vanta.com/settings/api.`
+		);
+	}
+	return `Unexpected API error. Check Vanta API status or retry.`;
+}
+
 function apiError(status: number, body: string, endpoint: string): CliError {
 	const message = sanitizeErrorBody(body);
-	return new CliError(`Vanta API error ${status}: ${message}`, {
-		suggestion:
-			status === 404
-				? `Resource not found at ${endpoint}. Check the ID and try again.`
-				: `Unexpected API error. Check Vanta API status or retry.`,
-	});
+	return new CliError(`Vanta API error ${status}: ${message}`, { suggestion: suggestionFor(status, endpoint) });
 }
 
 async function parseJsonResponse<T>(response: Response, url: string): Promise<T> {
