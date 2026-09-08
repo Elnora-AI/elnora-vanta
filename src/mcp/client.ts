@@ -120,5 +120,24 @@ export async function listTools(): Promise<McpTool[]> {
 
 export async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
 	await ensureInitialised();
-	return rpc("tools/call", { name, arguments: args });
+	const result = (await rpc("tools/call", { name, arguments: args })) as {
+		isError?: boolean;
+		content?: { type?: string; text?: string }[];
+	};
+
+	// A tool that fails answers with isError on an otherwise successful JSON-RPC
+	// call. Reporting that as success would let a script read failure as success,
+	// so surface it as a CLI error with a non-zero exit code.
+	if (result?.isError === true) {
+		const detail = (result.content ?? [])
+			.map((part) => part.text ?? "")
+			.join(" ")
+			.replace(/\s+/g, " ")
+			.trim();
+		throw new CliError(`Vanta MCP tool "${name}" failed: ${detail || "no detail returned"}`, {
+			suggestion: `Check the arguments against 'elnora-vanta mcp tools --name ${name}'.`,
+		});
+	}
+
+	return result;
 }
