@@ -83,9 +83,11 @@ and decides whether it looks like a Vanta write; it does not run the command or
 inspect the process. Shell is easy to write in ways a regex does not anticipate,
 and a review of this rule found six routes to the same binary that it missed:
 a backslash-newline splitting the command, `npx @elnora-ai/vanta`, a bare
-`VAR=value` prefix, `pnpm exec`, `tsx src/main.ts`, and `pnpm dev`. All six are
-now covered and pinned by tests, which is the point worth taking from it: the
-list of shapes is empirical, so treat it as one that will grow again.
+`VAR=value` prefix, `pnpm exec`, `tsx src/main.ts`, and `pnpm dev` — plus a
+wrapped `curl -X POST`, which is how anyone writes a curl carrying a body. All
+of them are now covered and pinned by tests, which is the point worth taking
+from it: the list of shapes is empirical, so treat it as one that will grow
+again.
 
 **The CLI's own gate is the control.** `--confirm` and `--force` are enforced in
 `src/safety.ts` before any request is built, they apply to every caller

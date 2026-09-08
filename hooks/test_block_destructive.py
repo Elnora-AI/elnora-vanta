@@ -14,6 +14,10 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 BLOCKED = [
+    # Multi-line curl: how anyone writes one carrying a body.
+    "curl -X POST \\\n  https://api.vanta.com/v1/controls",
+    "curl \\\n  -X DELETE \\\n  https://api.eu.vanta.com/v1/vendors/x",
+    "wget \\\n  --method=DELETE \\\n  https://api.aus.vanta.com/v1/x",
     # Routes to the same binary that once slipped past the --force rule.
     "elnora-vanta api controls delete-control X --confirm \\\n--force",
     "npx @elnora-ai/vanta api controls delete-control X --confirm --force",
@@ -46,6 +50,10 @@ BLOCKED = [
 ]
 
 ALLOWED = [
+    # A wrapped GET is still a read, and a pipe ends the statement.
+    "curl \\\n  https://api.vanta.com/v1/controls",
+    "curl https://api.vanta.com/v1/controls | grep POST",
+    "curl -X POST https://example.com/v1/x",
     # Package-runner commands that have nothing to do with the CLI.
     "pnpm dev",
     "npm run build",

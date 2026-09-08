@@ -61,15 +61,16 @@ _BLOCKED_CLI_RE = re.compile(
 # HTTP write methods against the Vanta API (any region). Blocks when a real
 # HTTP client (curl/wget/http/httpie) appears at statement start AND the same
 # statement contains both a Vanta API host and a write method.
-# Uses lookaheads so the order of --method and URL doesn't matter. Plain
-# `grep "POST api.vanta.com" docs.md` won't trip this because grep is not an
-# HTTP client.
+# Uses lookaheads so the order of --method and URL doesn't matter, and they see
+# through a backslash-newline because a curl carrying a body is normally written
+# across several lines. Plain `grep "POST api.vanta.com" docs.md` won't trip
+# this because grep is not an HTTP client.
 _VANTA_HOST = r"api(?:\.eu|\.aus)?\.vanta\.com"
 _API_WRITE_RE = re.compile(
     _STATEMENT_PREFIX
     + r"(?:curl|wget|http|httpie)\b"                             # HTTP client invocation
-    + r"(?=[^\n;&|]*\b" + _VANTA_HOST + r"\b)"                   # same statement has vanta API
-    + r"(?=[^\n;&|]*\b(?:" + "|".join(WRITE_METHODS) + r")\b)",  # same statement has write method
+    + r"(?=(?:[^\n;&|]|\\\n)*\b" + _VANTA_HOST + r"\b)"          # same statement has vanta API
+    + r"(?=(?:[^\n;&|]|\\\n)*\b(?:" + "|".join(WRITE_METHODS) + r")\b)",  # same statement has write method
     re.IGNORECASE,
 )
 
