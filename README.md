@@ -1,6 +1,6 @@
 # elnora-vanta
 
-**Your Vanta compliance program from the terminal. Ask what is failing, pull the evidence, fix what you can, and let an AI agent do it with you. Reads run straight away. Writes stop and show you the request first.**
+**Your Vanta compliance programme from the terminal. Ask what is failing, pull the evidence, fix what you can, and let an AI agent work on it with you. Reads run straight away, and a write shows you the request before it sends it.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@elnora-ai/vanta)](https://www.npmjs.com/package/@elnora-ai/vanta)
@@ -11,12 +11,12 @@ In your first ten minutes you can:
 - See where you stand: `/vanta-status` gives framework completion, failing tests and overdue vulnerabilities in one shot.
 - Triage vulnerabilities properly, filtering by severity, CVE, or what has blown its SLA.
 - Reach the whole documented Vanta API, 321 operations across 38 resource groups, as `elnora-vanta api <group> <command>`.
-- Reach the parts of Vanta that have no public REST endpoint (answer library, knowledge base, privacy assessments, access reviews) through `elnora-vanta mcp`.
+- Reach the parts of Vanta that have no public REST endpoint, among them the answer library, knowledge base, privacy assessments and access reviews, through `elnora-vanta mcp`.
 - Ask the compliance-auditor agent an open question like "what is blocking our audit?" and get an answer grounded in your live data.
 
-> The binary is `elnora-vanta`, not `vanta`. Vanta and other tools may claim the bare name, so we do not shadow it.
+> The binary is `elnora-vanta`, not `vanta`. Vanta and other tools may claim the bare name, so we keep our own.
 
-> **Writes do not happen by accident.** A write prints the request it would send and stops unless you pass `--confirm`. A destructive one also needs `--force`, and `--dry-run` overrides both. If you want the credential itself to be the backstop, grant your OAuth client read scope alone and writes fail at Vanta. See [Write safety](#write-safety).
+> **A write takes a deliberate flag.** Without `--confirm` a write prints the request it would send and stops. A destructive operation also wants `--force`, and `--dry-run` beats both. See [Write safety](#write-safety).
 
 ---
 
@@ -53,20 +53,18 @@ Run these as two separate slash commands, waiting for the first to finish:
 
 ### Codex, Cursor, and other agents
 
-Install the CLI, then drop [`AGENTS.md`](AGENTS.md) at your project root. Those agents read it natively and map intent to CLI commands. The plugin is Claude Code only.
-
-Installing through an AI agent? Point it at [`INSTALL_FOR_AGENTS.md`](INSTALL_FOR_AGENTS.md), a step-by-step runbook that creates the OAuth client, collects credentials and smoke-tests, pausing for you at each step.
+Install the CLI, then drop [`AGENTS.md`](AGENTS.md) at your project root. Those agents read it natively and map intent to CLI commands. The plugin is Claude Code only. To have an agent do the install, point it at [`INSTALL_FOR_AGENTS.md`](INSTALL_FOR_AGENTS.md), a runbook that creates the OAuth client, collects credentials and smoke-tests, pausing for you at each step.
 
 ---
 
 ## Vanta OAuth setup
 
-You create your own OAuth client. Nothing is shared or hosted by us.
+The OAuth client is yours: you create it, you hold the secret, and it stays on your machine.
 
 1. Go to [app.vanta.com/settings/api](https://app.vanta.com/settings/api) and create an OAuth client with the `client_credentials` grant.
 2. Choose its scopes deliberately.
    - `vanta-api.all:read` alone is the safest default. Reads work, and writes fail at Vanta itself, so the CLI's flags are not the last line of defence.
-   - Add `vanta-api.all:write` if you intend to change things. The CLI still asks for `--confirm`, and `--force` when destructive, but the credential can now modify your compliance data.
+   - Add `vanta-api.all:write` if you intend to change things. The CLI still asks for `--confirm`, and `--force` when destructive, and the credential can now modify your compliance data.
 3. Copy the client ID and secret.
 4. Save them:
    ```sh
@@ -120,18 +118,18 @@ Some endpoint families answer `403` on a standard management client, among them 
 
 To pick up Vanta API changes: `pnpm spec:fetch && pnpm generate && pnpm build`
 
-### Capabilities that are not in the REST API
+### Capabilities outside the REST API
 
-The answer library, knowledge base, privacy assessments, access reviews, TPRM assessment automations and policy generation live on Vanta's hosted MCP server. That needs a Vanta Admin sign-in rather than the service token:
+The answer library, knowledge base, privacy assessments, access reviews, TPRM assessment automations and policy generation live on Vanta's hosted MCP server. That wants a Vanta Admin sign-in rather than the service token:
 
 ```sh
 elnora-vanta mcp login                        # browser, once
-elnora-vanta mcp tools                        # 165 tools, with risk and arguments
+elnora-vanta mcp tools                        # what your tenant exposes, with risk and arguments
 elnora-vanta mcp tools --name generatePolicy  # one tool's input schema
 elnora-vanta mcp call getSlas
 ```
 
-`mcp call` follows the same write rules as `api`. EU and Australian tenants set `VANTA_MCP_URL`, pinned to Vanta's three MCP hosts.
+The tool list is read from your own tenant at run time, so it reflects the Vanta features you have. `mcp call` follows the same write rules as `api`. EU and Australian tenants set `VANTA_MCP_URL`, pinned to Vanta's three MCP hosts.
 
 ### Output
 
@@ -163,7 +161,7 @@ $ elnora-vanta api vendors delete-by-id VENDOR-ID
 
 A refusal exits `6`, so a script or an agent can tell it apart from success. `--dry-run` wins over `--confirm`, which means an agent handed a ready-made command line still cannot change anything. The plugin's hook goes further and blocks `--force`, keeping deletions with a person at a terminal.
 
-Reads and writes use separate OAuth scopes and separate cached tokens, so an install that does not write does not request the write scope. Requests go to `api.vanta.com`, `api.eu.vanta.com` or `api.aus.vanta.com` and nowhere else. Credentials sit in a `0600` file, tokens are cached at `0600`, and secrets are redacted on every error path.
+Reads and writes use separate OAuth scopes and separate cached tokens, so an install that only reads asks for the read scope alone. Requests go to `api.vanta.com`, `api.eu.vanta.com` or `api.aus.vanta.com` and nowhere else. Credentials sit in a `0600` file, tokens are cached at `0600`, and secrets are redacted on every error path.
 
 Full details, including the limits of each layer, are in [SAFETY.md](SAFETY.md).
 
@@ -186,7 +184,7 @@ Full details, including the limits of each layer, are in [SAFETY.md](SAFETY.md).
 
 The plugin keeps a snapshot of your compliance data so agents can answer posture questions without an API round trip. It ships as `references/*.template.md` with obviously fake rows, and `/vanta-sync` writes the real files to `$VANTA_REFERENCES_DIR`, or beside the templates if that is unset.
 
-Treat the generated files as sensitive, because they are your live security posture: failing controls, open vulnerabilities, evidence gaps. They are gitignored, and a CI guard fails the build if generated data is ever committed. There is no real compliance data anywhere in this repository. Every real row comes from your own synced cache.
+Treat the generated files as sensitive, because they are your live security posture: failing controls, open vulnerabilities, evidence gaps. They are gitignored, and a CI guard fails the build if generated data is ever committed. Every real row comes from your own synced cache, and this repository ships none of it.
 
 ---
 
@@ -210,11 +208,11 @@ Open-source agent tooling from [Elnora AI](https://github.com/Elnora-AI): free, 
 
 Issues and PRs are welcome at [github.com/Elnora-AI/elnora-vanta](https://github.com/Elnora-AI/elnora-vanta)
 
-Keep the safety grading intact. A new mutating operation has to be classified `write` or `destructive` and go through the same gate, and anything that lets a write execute without `--confirm` will not be merged. Questions: opensource@elnora.ai
+Keep the safety grading intact. A new mutating operation has to be classified `write` or `destructive` and go through the same gate, and a change that lets a write execute without `--confirm` will be sent back. Questions: opensource@elnora.ai
 
 ## Security
 
-Found a vulnerability? Email security@elnora.ai rather than opening a public issue. [SAFETY.md](SAFETY.md) has the threat model.
+Report a vulnerability to security@elnora.ai rather than opening a public issue. [SAFETY.md](SAFETY.md) has the threat model.
 
 ## License
 

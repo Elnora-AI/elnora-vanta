@@ -4,7 +4,7 @@ Universal guide for any coding agent working with `elnora-vanta`. Read natively 
 
 ## What this is
 
-`@elnora-ai/vanta` — one npm package exposing the `elnora-vanta` CLI: complete coverage of the Vanta compliance API (321 REST operations plus 165 MCP tools), with reads that run freely and writes gated behind `--confirm`/`--force`. Any agent shells out to the CLI; JSON output and structured errors are designed for self-correction.
+`@elnora-ai/vanta` — one npm package exposing the `elnora-vanta` CLI: complete coverage of the Vanta compliance API (321 REST operations, plus the MCP tools your tenant exposes), with reads that run freely and writes gated behind `--confirm`/`--force`. Any agent shells out to the CLI; JSON output and structured errors are designed for self-correction.
 
 > The binary is `elnora-vanta`, not `vanta` — this avoids shadowing other tools named `vanta` on PATH.
 

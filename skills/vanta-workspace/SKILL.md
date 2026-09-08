@@ -31,7 +31,7 @@ Verify with `elnora-vanta frameworks list`. If that fails, see
 |---------|----------------|------|
 | Curated commands (`frameworks`, `tests`, ...) | Everyday questions, **read-only by construction** | client-credentials |
 | `api <group> <command>` | All **321 documented REST operations**, 38 groups | client-credentials |
-| `mcp call <tool>` | **165 MCP tools** — answer library, knowledge base, privacy assessments, access reviews, `generatePolicy` (not in the REST API) | `elnora-vanta mcp login` (browser, Vanta Admin only) |
+| `mcp call <tool>` | **Vanta's MCP tools** — answer library, knowledge base, privacy assessments, access reviews, `generatePolicy` (not in the REST API) | `elnora-vanta mcp login` (browser, Vanta Admin only) |
 
 Do not guess command names. Discover them:
 
