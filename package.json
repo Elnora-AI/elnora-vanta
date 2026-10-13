@@ -30,7 +30,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/build.mjs",
     "dev": "tsx src/main.ts",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -68,11 +68,10 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@types/node": "26.6.4",
+    "commander": "^15.0.0",
+    "esbuild": "^0.28.1",
     "tsx": "4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"
-  },
-  "dependencies": {
-    "commander": "^15.0.0"
   }
 }
