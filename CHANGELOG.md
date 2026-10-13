@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Elnora-AI/elnora-vanta/compare/v0.1.2...v0.1.3) (2026-10-13)
+
+
+### Bug Fixes
+
+* bundle the CLI so the plugin lists no packages Claude Code cannot install ([#40](https://github.com/Elnora-AI/elnora-vanta/issues/40)) ([44bf8ed](https://github.com/Elnora-AI/elnora-vanta/commit/44bf8ed2d0f94603d215a245524ca96de85de6c2))
+
 ## [0.1.2](https://github.com/Elnora-AI/elnora-vanta/compare/v0.1.1...v0.1.2) (2026-09-08)
 
 

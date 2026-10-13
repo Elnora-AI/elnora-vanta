@@ -1,6 +1,6 @@
 {
   "name": "@elnora-ai/vanta",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Vanta compliance CLI and Claude Code plugin — the complete documented REST API (321 operations) as agent-friendly JSON, with dry-run-by-default write safety",
   "type": "module",
   "bin": {

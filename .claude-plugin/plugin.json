@@ -1,6 +1,6 @@
 {
   "name": "vanta-workspace",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Vanta compliance workspace for Claude Code — the complete documented REST API (321 operations) plus Vanta's MCP tools as agent-friendly JSON, with dry-run-by-default write safety, a cached compliance reference, a compliance-auditor agent, and a destructive-operation guard. Backed by the elnora-vanta CLI.",
   "author": {
     "name": "Elnora AI",

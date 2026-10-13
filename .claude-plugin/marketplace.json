@@ -11,7 +11,7 @@
       "name": "vanta-workspace",
       "description": "Vanta compliance workspace for Claude Code — the complete documented REST API (321 operations) plus Vanta's MCP tools as agent-friendly JSON, with dry-run-by-default write safety, a cached compliance reference, a compliance-auditor agent, and a destructive-operation guard.",
       "source": "./",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "category": "productivity",
       "tags": [
         "vanta",
